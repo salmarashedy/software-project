@@ -1,0 +1,80 @@
+[
+  {
+    "id": "1",
+    "title": "Design System Architecture",
+    "description": "Create a comprehensive design system including color palette, typography, and components.",
+    "status": "Done",
+    "priority": "High",
+    "assignee": {
+      "name": "Alex",
+      "avatar": "https://i.pravatar.cc/150?u=1"
+    },
+    "dueDate": "2024-12-20",
+    "tags": ["design", "system"]
+  },
+  {
+    "id": "2",
+    "title": "Fix Navigation Bug",
+    "description": "Mobile menu not closing when clicking outside on iOS devices.",
+    "status": "To Do",
+    "priority": "High",
+    "assignee": {
+      "name": "Sarah",
+      "avatar": "https://i.pravatar.cc/150?u=2"
+    },
+    "dueDate": "2024-12-21",
+    "tags": ["bug", "mobile"]
+  },
+  {
+    "id": "3",
+    "title": "Setup CI/CD Pipeline",
+    "description": "Configure GitHub Actions for automated testing and deployment.",
+    "status": "In Progress",
+    "priority": "High",
+    "assignee": {
+      "name": "David",
+      "avatar": "https://i.pravatar.cc/150?u=3"
+    },
+    "dueDate": "2024-12-22",
+    "tags": ["devops", "ci/cd"]
+  },
+  {
+    "id": "4",
+    "title": "User Research Interviews",
+    "description": "Conduct 10 user interviews to understand pain points and needs.",
+    "status": "Done",
+    "priority": "Low",
+    "assignee": {
+      "name": "Alex",
+      "avatar": "https://i.pravatar.cc/150?u=1"
+    },
+    "dueDate": "2024-12-15",
+    "tags": ["research", "ux"]
+  },
+  {
+    "id": "5",
+    "title": "Write API Documentation",
+    "description": "Document all REST API endpoints with examples and response schemas.",
+    "status": "To Do",
+    "priority": "Medium",
+    "assignee": {
+      "name": "Jordan",
+      "avatar": "https://i.pravatar.cc/150?u=4"
+    },
+    "dueDate": "2024-12-28",
+    "tags": ["docs", "api"]
+  },
+  {
+    "id": "6",
+    "title": "Optimize Database Queries",
+    "description": "Identify and optimize slow queries, add proper indexes.",
+    "status": "To Do",
+    "priority": "Medium",
+    "assignee": {
+      "name": "Sarah",
+      "avatar": "https://i.pravatar.cc/150?u=2"
+    },
+    "dueDate": "2024-12-30",
+    "tags": ["database", "performance"]
+  }
+]
