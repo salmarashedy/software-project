@@ -5,6 +5,9 @@ import Planning from './pages/Planning'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import useAppStore from './stores/useAppStore'
+import mockTasks from './data/mockTasks.json';
+import TaskCard from './components/TaskCard';
+
 
 function Dashboard() {
   const user = useAppStore((state) => state.user)
@@ -36,10 +39,23 @@ function Dashboard() {
               <p className="mt-4 text-4xl font-bold text-dev-text-main">{taskSummary.pending}</p>
             </div>
           </div>
+
+          <div className="mt-8">
+            <h3 className="text-xl font-bold text-dev-text-main mb-4">Recent Tasks</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {mockTasks.map((task) => (
+                <TaskCard key={task.id} task={task} />
+              ))}
+            </div>
+          </div>
+          
+
       </div>
     </div>
   )
 }
+
+
 
 function App() {
   const theme = useAppStore((state) => state.theme)
