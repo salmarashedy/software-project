@@ -3,13 +3,12 @@ import { Bell, Search } from 'lucide-react'
 function Header() {
   return (
     <div className="h-20 bg-dev-surface border-b border-dev-border flex items-center justify-between px-8">
-      {/* Left: Title */}
+ 
       <div>
         <h1 className="text-2xl font-bold text-dev-text-main">Projects</h1>
         <p className="text-sm text-dev-text-muted">Manage your tasks with clarity</p>
       </div>
-
-      {/* Right: Search, Notifications, Profile */}
+      
       <div className="flex items-center gap-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-dev-text-muted" />
