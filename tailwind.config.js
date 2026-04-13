@@ -9,18 +9,18 @@ export default {
     extend: {
       colors: {
         dev: {
-          bg: '#0F0F1A',
-          surface: '#1A1A2E',
-          card: '#22223B',
-          border: '#2E2E4D',
-          primary: '#6C3BFF',
-          accent: '#F59E0B',
+          bg: 'rgb(var(--dev-bg) / <alpha-value>)',
+          surface: 'rgb(var(--dev-surface) / <alpha-value>)',
+          card: 'rgb(var(--dev-card) / <alpha-value>)',
+          border: 'rgb(var(--dev-border) / <alpha-value>)',
+          primary: 'rgb(var(--dev-primary) / <alpha-value>)',
+          accent: 'rgb(var(--dev-accent) / <alpha-value>)',
           text: {
-            main: '#E5E7EB',
-            muted: '#9CA3AF'
-          }
-        }
-      }
+            main: 'rgb(var(--dev-text-main) / <alpha-value>)',
+            muted: 'rgb(var(--dev-text-muted) / <alpha-value>)',
+          },
+        },
+      },
     },
   },
   plugins: [],

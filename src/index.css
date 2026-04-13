@@ -1,3 +1,49 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --dev-bg: 15 15 26;
+  --dev-surface: 26 26 46;
+  --dev-card: 34 34 59;
+  --dev-border: 46 46 77;
+  --dev-primary: 108 59 255;
+  --dev-accent: 245 158 11;
+  --dev-text-main: 229 231 235;
+  --dev-text-muted: 156 163 175;
+  background-color: rgb(var(--dev-bg));
+  color: rgb(var(--dev-text-main));
+}
+
+html.light {
+  color-scheme: light;
+  --dev-bg: 248 250 252;
+  --dev-surface: 255 255 255;
+  --dev-card: 249 250 251;
+  --dev-border: 226 232 240;
+  --dev-primary: 79 70 229;
+  --dev-accent: 245 158 11;
+  --dev-text-main: 15 23 42;
+  --dev-text-muted: 100 116 139;
+  background-color: rgb(var(--dev-bg));
+  color: rgb(var(--dev-text-main));
+}
+
+html.dark {
+  color-scheme: dark;
+  --dev-bg: 15 15 26;
+  --dev-surface: 26 26 46;
+  --dev-card: 34 34 59;
+  --dev-border: 46 46 77;
+  --dev-primary: 108 59 255;
+  --dev-accent: 245 158 11;
+  --dev-text-main: 229 231 235;
+  --dev-text-muted: 156 163 175;
+  background-color: rgb(var(--dev-bg));
+  color: rgb(var(--dev-text-main));
+}
+
+body {
+  @apply bg-dev-bg text-dev-text-main min-h-screen;
+}
