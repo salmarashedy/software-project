@@ -1,7 +1,10 @@
+import { Routes, Route, Navigate } from 'react-router-dom'
 import Sidebar from './components/Sidebar'
 import Header from './components/Header'
+import Login from './pages/Login'
+import Register from './pages/Register'
 
-function App() {
+function Dashboard() {
   return (
     <div className="flex">
       <Sidebar />
@@ -12,6 +15,17 @@ function App() {
         </div>
       </div>
     </div>
+  )
+}
+
+function App() {
+  return (
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/dashboard" element={<Dashboard />} />
+      <Route path="/" element={<Navigate to="/login" />} />
+    </Routes>
   )
 }
 
