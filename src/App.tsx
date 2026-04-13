@@ -8,6 +8,7 @@ import useAppStore from './stores/useAppStore'
 import mockTasks from './data/mockTasks.json';
 import TaskCard from './components/TaskCard';
 import ListView from "./components/ListView";  // ✅ CORRECT - matches your folder structure
+import KanbanBoard from './components/KanbanBoard';
 
 
 
@@ -42,7 +43,6 @@ function Dashboard() {
             </div>
           </div>
 
-          {/* Task Cards Grid */}
           <div className="mt-8">
             <h3 className="text-xl font-bold text-dev-text-main mb-4">Recent Tasks</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -56,11 +56,17 @@ function Dashboard() {
             <h3 className="text-xl font-bold text-dev-text-main mb-4">All Tasks (List View)</h3>
             <ListView />
           </div>
+
+          <div className="mt-12 mb-12">
+            <h3 className="text-xl font-bold text-dev-text-main mb-4">Project Board (Kanban)</h3>
+            <KanbanBoard />
+          </div>
           
       </div>
     </div>
   )
 }
+
 
 
 
