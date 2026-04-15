@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import TaskModal from "./components/task/TaskModal";
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Layout from "./components/Layout"
 import Planning from './pages/Planning'
@@ -19,12 +20,15 @@ function Dashboard() {
   const user = useAppStore((state) => state.user)
   const projects = useAppStore((state) => state.projects)
   const taskSummary = useAppStore((state) => state.taskSummary)
+  const [open, setOpen] = useState(false);
   
 const [currentView, setCurrentView] = useState<'cards' | 'list' | 'kanban'>('cards')
 
   return (
     <div>
         <div className="p-8">
+         <button onClick={() => setOpen(true)}>Open Task</button>
+         <TaskModal isOpen={open} onClose={() => setOpen(false)} />
           <div className="rounded-3xl bg-dev-surface border border-dev-border p-8 mb-8">
             <p className="text-sm text-dev-text-muted">Welcome back,</p>
             <h2 className="text-3xl font-bold text-dev-text-main">{user.name}</h2>
