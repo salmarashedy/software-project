@@ -11,6 +11,7 @@ import TaskCard from './components/TaskCard';
 import ListView from "./components/ListView";  // ✅ CORRECT - matches your folder structure
 import KanbanBoard from './components/KanbanBoard';
 import Toast from './components/Toast';
+import HeaderWidget from './components/HeaderWidget';
 
 
 
@@ -39,7 +40,10 @@ const [currentView, setCurrentView] = useState<'cards' | 'list' | 'kanban'>('car
               New Task
             </button>
           </div>
-           <TaskModal isOpen={open} onClose={() => setOpen(false)} onSave={() => setToast({message: "Task created successfully", visible: true})} />
+          <div className="mb-8">
+            <HeaderWidget />
+          </div>
+          <TaskModal isOpen={open} onClose={() => setOpen(false)} onSave={() => setToast({message: "Task created successfully", visible: true})} />
           <div className="rounded-3xl bg-dev-surface border border-dev-border p-8 mb-8">
             <p className="text-sm text-dev-text-muted">Welcome back,</p>
             <h2 className="text-3xl font-bold text-dev-text-main">{user.name}</h2>
