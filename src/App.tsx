@@ -10,6 +10,8 @@ import mockTasks from './data/mockTasks.json';
 import TaskCard from './components/TaskCard';
 import ListView from "./components/ListView";  // ✅ CORRECT - matches your folder structure
 import KanbanBoard from './components/KanbanBoard';
+import Toast from './components/Toast';
+import HeaderWidget from './components/HeaderWidget';
 
 
 
@@ -21,6 +23,7 @@ function Dashboard() {
   const projects = useAppStore((state) => state.projects)
   const taskSummary = useAppStore((state) => state.taskSummary)
   const [open, setOpen] = useState(false);
+  const [toast, setToast] = useState<{message: string, visible: boolean}>({message: '', visible: false});
   
 const [currentView, setCurrentView] = useState<'cards' | 'list' | 'kanban'>('cards')
 
@@ -37,7 +40,10 @@ const [currentView, setCurrentView] = useState<'cards' | 'list' | 'kanban'>('car
               New Task
             </button>
           </div>
-          <TaskModal isOpen={open} onClose={() => setOpen(false)} />
+          <div className="mb-8">
+            <HeaderWidget />
+          </div>
+          <TaskModal isOpen={open} onClose={() => setOpen(false)} onSave={() => setToast({message: "Task created successfully", visible: true})} />
           <div className="rounded-3xl bg-dev-surface border border-dev-border p-8 mb-8">
             <p className="text-sm text-dev-text-muted">Welcome back,</p>
             <h2 className="text-3xl font-bold text-dev-text-main">{user.name}</h2>
@@ -102,7 +108,7 @@ const [currentView, setCurrentView] = useState<'cards' | 'list' | 'kanban'>('car
                   {mockTasks.map((task: any) => (
 
 
-                    <TaskCard key={task.id} task={task} />
+                    <TaskCard key={task.id} task={task} onDelete={() => setToast({message: "Task deleted successfully", visible: true})} />
                   ))}
                 </div>
               </div>
@@ -124,6 +130,7 @@ const [currentView, setCurrentView] = useState<'cards' | 'list' | 'kanban'>('car
           </div>
           
       </div>
+      <Toast message={toast.message} isVisible={toast.visible} onClose={() => setToast(prev => ({...prev, visible: false}))} />
     </div>
   )
 }

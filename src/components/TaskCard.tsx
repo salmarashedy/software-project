@@ -19,9 +19,10 @@ interface Task {
 
 interface TaskCardProps {
   task: Task;
+  onDelete?: (id: string) => void;
 }
 
-const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
+const TaskCard: React.FC<TaskCardProps> = ({ task, onDelete }) => {
   
   
   const getPriorityColor = (priority: string) => {
@@ -52,12 +53,24 @@ const TaskCard: React.FC<TaskCardProps> = ({ task }) => {
         <span className={`text-xs font-bold px-2 py-1 rounded ${getPriorityColor(task.priority)}`}>
           {task.priority.toUpperCase()}
         </span>
-        <div className="flex gap-1">
+        <div className="flex gap-1 items-center">
           {task.tags.map((tag, index) => (
             <span key={index} className="text-xs text-[#9CA3AF] bg-[#0F0F1A] px-2 py-1 rounded">
               {tag}
             </span>
           ))}
+          {onDelete && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(task.id);
+              }}
+              className="text-xs text-red-400 hover:text-red-300 ml-2"
+              title="Delete task"
+            >
+              🗑️
+            </button>
+          )}
         </div>
       </div>
 

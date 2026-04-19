@@ -3,9 +3,10 @@
 type Props = {
   isOpen: boolean;
   onClose: () => void;
+  onSave?: () => void;
 };
 
-export default function TaskModal({ isOpen, onClose }: Props) {
+export default function TaskModal({ isOpen, onClose, onSave }: Props) {
   if (!isOpen) return null;
 
   return (
@@ -58,7 +59,13 @@ export default function TaskModal({ isOpen, onClose }: Props) {
             Cancel
           </button>
 
-          <button className="w-full sm:w-auto px-5 py-3 bg-violet-600 text-white rounded-2xl font-medium hover:bg-violet-500 transition">
+          <button
+            onClick={() => {
+              onSave?.();
+              onClose();
+            }}
+            className="w-full sm:w-auto px-5 py-3 bg-violet-600 text-white rounded-2xl font-medium hover:bg-violet-500 transition"
+          >
             Save
           </button>
         </div>
