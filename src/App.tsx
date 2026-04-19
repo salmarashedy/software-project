@@ -27,8 +27,17 @@ const [currentView, setCurrentView] = useState<'cards' | 'list' | 'kanban'>('car
   return (
     <div>
         <div className="p-8">
-         <button onClick={() => setOpen(true)}>Open Task</button>
-         <TaskModal isOpen={open} onClose={() => setOpen(false)} />
+          <div className="mb-6 flex justify-start">
+            <button
+              type="button"
+              onClick={() => setOpen(true)}
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-5 py-3 text-white font-medium shadow-lg shadow-violet-500/20 transition transform hover:brightness-110 hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-violet-300"
+            >
+              <span className="text-xl leading-none">+</span>
+              New Task
+            </button>
+          </div>
+          <TaskModal isOpen={open} onClose={() => setOpen(false)} />
           <div className="rounded-3xl bg-dev-surface border border-dev-border p-8 mb-8">
             <p className="text-sm text-dev-text-muted">Welcome back,</p>
             <h2 className="text-3xl font-bold text-dev-text-main">{user.name}</h2>
