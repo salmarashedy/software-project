@@ -1,0 +1,16 @@
+# requirements.txt
+# Python dependencies for Task Management API
+
+# Flask framework and extensions
+Flask==2.3.3
+Flask-SQLAlchemy==3.0.5
+Flask-CORS==4.0.0
+
+# Database
+SQLAlchemy==2.0.21
+
+# Environment configuration
+python-dotenv==1.0.0
+
+# Development/Optional
+Werkzeug==2.3.7
