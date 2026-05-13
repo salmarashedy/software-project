@@ -1,3 +1,4 @@
+# Comments backend feature
 # src/server/controllers/comment_controller.py
 # Business logic controller for Comment operations
 
