@@ -1,6 +1,7 @@
 import mockTasks from '../data/mockTasks.json';
 
-const ListView = () => {
+const ListView = ({ tasks }: { tasks?: typeof mockTasks }) => {
+  const items = tasks ?? mockTasks;
   
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -34,7 +35,7 @@ const ListView = () => {
           </tr>
         </thead>
         <tbody className="divide-y divide-[#2E2E4D]">
-          {mockTasks.map((task) => (
+          {items.map((task) => (
             <tr key={task.id} className="hover:bg-[#2E2E4D] transition-colors">
               <td className="px-6 py-4">
                 <p className="text-[#E5E7EB] font-medium">{task.title}</p>

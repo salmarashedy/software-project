@@ -22,8 +22,24 @@ function Dashboard() {
   const taskSummary = useAppStore((state) => state.taskSummary)
   const [open, setOpen] = useState(false);
   const [toast, setToast] = useState<{message: string, visible: boolean}>({message: '', visible: false});
+  const [tasks, setTasks] = useState(mockTasks);
   
 const [currentView, setCurrentView] = useState<'cards' | 'list' | 'kanban'>('cards')
+
+  const handleSaveTask = (data: { title: string; description: string }) => {
+    const newTask = {
+      id: String(Date.now()),
+      title: data.title,
+      description: data.description,
+      status: 'To Do' as const,
+      priority: 'Medium' as const,
+      assignee: { name: user.name, avatar: '' },
+      dueDate: new Date().toISOString().split('T')[0],
+      tags: [],
+    };
+    setTasks([newTask, ...tasks]);
+    setToast({ message: "Task created successfully", visible: true });
+  }
 
   return (
     <div>
@@ -41,7 +57,7 @@ const [currentView, setCurrentView] = useState<'cards' | 'list' | 'kanban'>('car
           <div className="mb-8">
             <HeaderWidget />
           </div>
-          <TaskModal isOpen={open} onClose={() => setOpen(false)} onSave={() => setToast({message: "Task created successfully", visible: true})} />
+          <TaskModal isOpen={open} onClose={() => setOpen(false)} onSave={handleSaveTask} />
           <div className="rounded-3xl bg-dev-surface border border-dev-border p-8 mb-8">
             <p className="text-sm text-dev-text-muted">Welcome back,</p>
             <h2 className="text-3xl font-bold text-dev-text-main">{user.name}</h2>
@@ -104,7 +120,7 @@ const [currentView, setCurrentView] = useState<'cards' | 'list' | 'kanban'>('car
                 <h3 className="text-xl font-bold text-dev-text-main mb-4">Recent Tasks</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                  {mockTasks.map((task: any, idx: number) => (
+                  {tasks.map((task: any, idx: number) => (
                     <TaskCard key={idx} task={task} onDelete={() => setToast({message: "Task deleted successfully", visible: true})} />
                   ))}
                 </div>
@@ -114,14 +130,15 @@ const [currentView, setCurrentView] = useState<'cards' | 'list' | 'kanban'>('car
             {currentView === 'list' && (
               <div>
                 <h3 className="text-xl font-bold text-dev-text-main mb-4">All Tasks (List View)</h3>
-                <ListView />
+                <ListView tasks={tasks} />
               </div>
             )}
 
             {currentView === 'kanban' && (
               <div>
                 <h3 className="text-xl font-bold text-dev-text-main mb-4">Project Board (Kanban)</h3>
-                <KanbanBoard />
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                <KanbanBoard tasks={tasks as any} />
               </div>
             )}
           </div>

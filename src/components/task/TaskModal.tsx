@@ -5,10 +5,12 @@ import type React from 'react';
 type Props = {
   isOpen: boolean;
   onClose: () => void;
-  onSave?: () => void;
+  onSave?: (task: { title: string; description: string }) => void;
 };
 
 export default function TaskModal({ isOpen, onClose, onSave }: Props) {
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
   const [subtasks, setSubtasks] = useState<Array<{ id: number; title: string; completed: boolean }>>([]);
   const [isLoadingSubtasks, setIsLoadingSubtasks] = useState(false);
   const [subtaskText, setSubtaskText] = useState('');
@@ -208,6 +210,8 @@ export default function TaskModal({ isOpen, onClose, onSave }: Props) {
         <div className="mb-5">
           <label className="block text-sm font-medium mb-2 text-gray-200">Title</label>
           <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
             className="w-full bg-[#2a2a40] text-white border border-gray-600 placeholder-gray-400 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-violet-500"
             placeholder="Task title"
           />
@@ -217,6 +221,8 @@ export default function TaskModal({ isOpen, onClose, onSave }: Props) {
         <div className="mb-5">
           <label className="block text-sm font-medium mb-2 text-gray-200">Description</label>
           <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
             className="w-full min-h-[100px] resize-none bg-[#2a2a40] text-white border border-gray-600 placeholder-gray-400 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-violet-500"
             placeholder="Description"
           />
@@ -335,7 +341,10 @@ export default function TaskModal({ isOpen, onClose, onSave }: Props) {
 
           <button
             onClick={() => {
-              onSave?.();
+              if (!title.trim()) return;
+              onSave?.({ title: title.trim(), description: description.trim() });
+              setTitle('');
+              setDescription('');
               onClose();
             }}
             className="w-full sm:w-auto px-5 py-3 bg-violet-600 text-white rounded-2xl font-medium hover:bg-violet-500 transition"

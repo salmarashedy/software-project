@@ -14,8 +14,8 @@ interface Task {
   tags: string[];
 }
 
-const KanbanBoard = () => {
-  const [tasks, setTasks] = useState<Task[]>(mockTasks as Task[]);
+const KanbanBoard = ({ tasks: initialTasks }: { tasks?: Task[] }) => {
+  const [tasks, setTasks] = useState<Task[]>(initialTasks ?? (mockTasks as Task[]));
 
 
   const columns = [
