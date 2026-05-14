@@ -1,12 +1,26 @@
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 
 // --- 1. MODULAR TYPES & MOCK DATA ---
 type Task = {
-  id: number
+  id: string | number
   name: string
   start_date: string // ISO string
   end_date: string   // ISO string
   color: string      // Tailwind color class
+}
+
+type ApiTask = {
+  id?: number
+  _id?: string
+  title?: string
+  description?: string
+  status?: 'todo' | 'in-progress' | 'completed' | string
+  priority?: 'low' | 'medium' | 'high' | string
+  dueDate?: string
+  assignedTo?: string
+  tags?: string[]
+  createdAt?: string
+  updatedAt?: string
 }
 
 const MOCK_TASKS: Task[] = [
@@ -24,6 +38,21 @@ const MOCK_TASKS: Task[] = [
   { id: 12, name: "Deployment Pipeline", start_date: '2026-07-15', end_date: '2026-08-10', color: "bg-[#8B5CF6]" },
 ]
 
+const STATUS_COLORS: Record<string, string> = {
+  todo: 'bg-[#22D3EE]',
+  'in-progress': 'bg-[#F59E0B]',
+  completed: 'bg-[#34D399]',
+}
+
+const CHART_COLORS = [
+  'bg-[#6C3BFF]',
+  'bg-[#22D3EE]',
+  'bg-[#F472B6]',
+  'bg-[#34D399]',
+  'bg-[#F59E0B]',
+  'bg-[#8B5CF6]',
+]
+
 // --- 2. DATE MATH UTILITIES ---
 const MS_PER_DAY = 1000 * 60 * 60 * 24
 
@@ -39,6 +68,40 @@ function addDays(date: Date, days: number) {
 
 function formatDateToDayMonth(date: Date) {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+function parseTaskId(task: ApiTask, index: number) {
+  if (task._id) return task._id
+  if (typeof task.id === 'number') return task.id
+  return `task-${index + 1}`
+}
+
+function normalizeTaskDates(task: ApiTask) {
+  const start = task.createdAt || task.dueDate || new Date().toISOString()
+  let end = task.dueDate || task.createdAt || addDays(new Date(start), 3).toISOString()
+
+  if (new Date(end).getTime() < new Date(start).getTime()) {
+    end = addDays(new Date(start), 1).toISOString()
+  }
+
+  return { start, end }
+}
+
+function mapApiTasksToGantt(apiTasks: ApiTask[]): Task[] {
+  if (apiTasks.length === 0) return MOCK_TASKS
+
+  return apiTasks.map((task, index) => {
+    const { start, end } = normalizeTaskDates(task)
+    const status = task.status || 'todo'
+
+    return {
+      id: parseTaskId(task, index),
+      name: task.title || `Task ${index + 1}`,
+      start_date: start,
+      end_date: end,
+      color: STATUS_COLORS[status] || CHART_COLORS[index % CHART_COLORS.length],
+    }
+  })
 }
 
 // --- 3. CONSTANTS ---
@@ -94,12 +157,106 @@ function GanttBar({
   )
 }
 
+function ChartCard({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
+  return (
+    <div className="bg-dev-bg/60 border border-dev-border/60 rounded-2xl p-4 shadow-sm">
+      <div className="flex items-start justify-between mb-3">
+        <div>
+          <h3 className="text-sm font-semibold text-dev-text-main">{title}</h3>
+          {subtitle ? <p className="text-xs text-dev-text-muted mt-1">{subtitle}</p> : null}
+        </div>
+      </div>
+      {children}
+    </div>
+  )
+}
+
+function BarList({ items }: { items: { label: string; value: number; color: string }[] }) {
+  const maxValue = Math.max(1, ...items.map(item => item.value))
+
+  return (
+    <div className="space-y-3">
+      {items.map(item => (
+        <div key={item.label} className="space-y-1">
+          <div className="flex items-center justify-between text-xs text-dev-text-muted">
+            <span className="truncate pr-2">{item.label}</span>
+            <span className="text-dev-text-main font-semibold">{item.value}</span>
+          </div>
+          <div className="h-2 w-full rounded-full bg-dev-border/30 overflow-hidden">
+            <div
+              className={`h-full ${item.color}`}
+              style={{ width: `${(item.value / maxValue) * 100}%` }}
+            />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // --- 5. MAIN CONTAINER ---
 export default function Planning() {
-  const [tasks] = useState<Task[]>(MOCK_TASKS)
+  const [apiTasks, setApiTasks] = useState<ApiTask[]>([])
+  const [tasks, setTasks] = useState<Task[]>(MOCK_TASKS)
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const headerScrollRef = useRef<HTMLDivElement>(null)
   const bodyScrollRef = useRef<HTMLDivElement>(null)
   const sidebarScrollRef = useRef<HTMLDivElement>(null)
+
+  const loadTasks = useCallback(async () => {
+    try {
+      const res = await fetch('/api/tasks')
+      if (!res.ok) throw new Error('Failed to load tasks')
+      const data = await res.json()
+      const items: ApiTask[] = Array.isArray(data) ? data : (data.data ?? [])
+
+      setApiTasks(items)
+      setTasks(mapApiTasksToGantt(items))
+      setLastUpdated(new Date())
+    } catch {
+      setApiTasks([])
+      setTasks(MOCK_TASKS)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadTasks()
+    const interval = setInterval(loadTasks, 15000)
+    return () => clearInterval(interval)
+  }, [loadTasks])
+
+  const tasksPerUser = useMemo(() => {
+    const counts = new Map<string, number>()
+    apiTasks.forEach(task => {
+      const user = task.assignedTo?.trim() || 'Unassigned'
+      counts.set(user, (counts.get(user) || 0) + 1)
+    })
+
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([label, value], index) => ({
+        label,
+        value,
+        color: CHART_COLORS[index % CHART_COLORS.length],
+      }))
+  }, [apiTasks])
+
+  const tasksPerStatus = useMemo(() => {
+    const statuses = ['todo', 'in-progress', 'completed']
+    return statuses.map(status => ({
+      label: status.replace('-', ' '),
+      value: apiTasks.filter(task => (task.status || 'todo') === status).length,
+      color: STATUS_COLORS[status] || CHART_COLORS[0],
+    }))
+  }, [apiTasks])
+
+  const completedCount = useMemo(
+    () => apiTasks.filter(task => task.status === 'completed').length,
+    [apiTasks]
+  )
+  const totalCount = apiTasks.length
+  const pendingCount = Math.max(totalCount - completedCount, 0)
+  const completionRate = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
 
   const timelineData = useMemo(() => {
     if (tasks.length === 0) return { start: new Date(), end: new Date(), days: [] as Date[], totalDays: 0 }
@@ -137,7 +294,58 @@ export default function Planning() {
     <div className="flex flex-col h-full">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-dev-text-main">Project Timeline</h1>
-        <p className="text-dev-text-muted mt-2">Group 4: Precision Date Math Scaling</p>
+        <div className="flex items-center gap-3 mt-4">
+          <button
+            type="button"
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-dev-border text-dev-text-main hover:bg-dev-bg/60 transition"
+            onClick={loadTasks}
+          >
+            Refresh data
+          </button>
+          {lastUpdated ? (
+            <span className="text-xs text-dev-text-muted">
+              Updated {lastUpdated.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 mb-6 lg:grid-cols-2 xl:grid-cols-4">
+        <ChartCard title="Tasks per user" subtitle="Assigned ownership">
+          {tasksPerUser.length === 0 ? (
+            <p className="text-sm text-dev-text-muted">No task assignments yet.</p>
+          ) : (
+            <BarList items={tasksPerUser} />
+          )}
+        </ChartCard>
+
+        <ChartCard title="Tasks per status" subtitle="Pipeline mix">
+          <BarList items={tasksPerStatus} />
+        </ChartCard>
+
+        <ChartCard title="Completed vs pending" subtitle="Progress split">
+          <BarList
+            items={[
+              { label: 'Completed', value: completedCount, color: STATUS_COLORS.completed },
+              { label: 'Pending', value: pendingCount, color: STATUS_COLORS['in-progress'] },
+            ]}
+          />
+        </ChartCard>
+
+        <ChartCard title="Productivity" subtitle="Completion rate">
+          <div className="flex items-end justify-between">
+            <div>
+              <p className="text-3xl font-bold text-dev-text-main">{completionRate}%</p>
+              <p className="text-xs text-dev-text-muted mt-1">{completedCount} of {totalCount} tasks done</p>
+            </div>
+          </div>
+          <div className="h-2 w-full rounded-full bg-dev-border/30 overflow-hidden mt-3">
+            <div
+              className="h-full bg-[#34D399]"
+              style={{ width: `${completionRate}%` }}
+            />
+          </div>
+        </ChartCard>
       </div>
 
       <div className="bg-dev-surface border border-dev-border rounded-3xl p-6 shadow-sm flex flex-col min-h-0 flex-1">
