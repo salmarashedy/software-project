@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
+import type React from 'react';
 import mockTasks from '../data/mockTasks.json';
 import TaskCard from './TaskCard';
 
@@ -13,7 +14,7 @@ interface Task {
   tags: string[];
 }
 
-const KanbanBoard: React.FC = () => {
+const KanbanBoard = () => {
   const [tasks, setTasks] = useState<Task[]>(mockTasks as Task[]);
 
 
@@ -24,15 +25,15 @@ const KanbanBoard: React.FC = () => {
   ];
 
   const handleDragStart = (e: React.DragEvent, taskId: string) => {
-    e.dataTransfer.setData('taskId', taskId);
+    e.dataTransfer!.setData('taskId', taskId);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault(); // Necessary to allow dropping
+    e.preventDefault();
   };
 
   const handleDrop = (e: React.DragEvent, status: string) => {
-    const taskId = e.dataTransfer.getData('taskId');
+    const taskId = e.dataTransfer!.getData('taskId');
     
     const updatedTasks = tasks.map((task) => {
       if (task.id === taskId) {

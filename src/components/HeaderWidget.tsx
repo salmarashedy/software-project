@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 
-const HeaderWidget: React.FC = () => {
+const HeaderWidget = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {

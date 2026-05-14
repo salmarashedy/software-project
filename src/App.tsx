@@ -16,8 +16,6 @@ import HeaderWidget from './components/HeaderWidget';
 
 
 
-
-
 function Dashboard() {
   const user = useAppStore((state) => state.user)
   const projects = useAppStore((state) => state.projects)
@@ -105,10 +103,9 @@ const [currentView, setCurrentView] = useState<'cards' | 'list' | 'kanban'>('car
               <div>
                 <h3 className="text-xl font-bold text-dev-text-main mb-4">Recent Tasks</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {mockTasks.map((task: any) => (
-
-
-                    <TaskCard key={task.id} task={task} onDelete={() => setToast({message: "Task deleted successfully", visible: true})} />
+                  {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                  {mockTasks.map((task: any, idx: number) => (
+                    <TaskCard key={idx} task={task} onDelete={() => setToast({message: "Task deleted successfully", visible: true})} />
                   ))}
                 </div>
               </div>

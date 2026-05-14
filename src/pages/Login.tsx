@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import type React from 'react'
 
 function Login() {
   const navigate = useNavigate()

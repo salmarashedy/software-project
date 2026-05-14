@@ -1,5 +1,6 @@
 // Backend integration feature
 import { useState, useEffect } from 'react';
+import type React from 'react';
 
 type Props = {
   isOpen: boolean;
@@ -15,7 +16,6 @@ export default function TaskModal({ isOpen, onClose, onSave }: Props) {
   const [comments, setComments] = useState<Array<{ id: number; author: string; text: string }>>([]);
   const [commentText, setCommentText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoadingComments, setIsLoadingComments] = useState(false);
 
   // Fetch subtasks from the Flask backend
   const fetchSubtasks = async () => {
@@ -37,7 +37,6 @@ export default function TaskModal({ isOpen, onClose, onSave }: Props) {
 
   // Fetch comments from the Flask backend
   const fetchComments = async () => {
-    setIsLoadingComments(true);
     try {
       const response = await fetch('http://127.0.0.1:5000/api/comments/task/1');
       const data = await response.json();
@@ -48,8 +47,6 @@ export default function TaskModal({ isOpen, onClose, onSave }: Props) {
       }
     } catch (error) {
       console.error('Error fetching comments:', error);
-    } finally {
-      setIsLoadingComments(false);
     }
   };
 

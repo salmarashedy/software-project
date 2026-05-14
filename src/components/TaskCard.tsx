@@ -1,6 +1,3 @@
-import React from 'react';
-
-
 interface Assignee {
   name: string;
   avatar: string;
@@ -22,7 +19,7 @@ interface TaskCardProps {
   onDelete?: (id: string) => void;
 }
 
-const TaskCard: React.FC<TaskCardProps> = ({ task, onDelete }) => {
+const TaskCard = ({ task, onDelete }: TaskCardProps) => {
   
   
   const getPriorityColor = (priority: string) => {

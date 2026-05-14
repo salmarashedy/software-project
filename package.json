@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "server": "node src/server/server.js",
-    "server:dev": "nodemon src/server/server.js",
+    "server:flask": "cd src/server && python app.py",
+    "server:backend": "cd backend && npm run dev",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"

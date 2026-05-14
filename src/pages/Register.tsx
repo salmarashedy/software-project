@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import type React from 'react'
 
 function Register() {
   const navigate = useNavigate()

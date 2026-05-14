@@ -1,23 +1,6 @@
-import React from 'react';
 import mockTasks from '../data/mockTasks.json';
 
-interface Assignee {
-  name: string;
-  avatar: string;
-}
-
-interface Task {
-  id: string;
-  title: string;
-  description: string;
-  status: 'To Do' | 'In Progress' | 'Done';
-  priority: 'High' | 'Medium' | 'Low';
-  assignee: Assignee;
-  dueDate: string;
-  tags: string[];
-}
-
-const ListView: React.FC = () => {
+const ListView = () => {
   
   const getPriorityColor = (priority: string) => {
     switch (priority) {

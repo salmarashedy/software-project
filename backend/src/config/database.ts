@@ -3,11 +3,12 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Using the Connection String method - most reliable
-const connectionString = 'postgresql://postgres:your_password@localhost:5432/devcollab';
-
 const pool = new Pool({
-  connectionString: connectionString,
+  user: process.env.DB_USER || 'postgres',
+  host: process.env.DB_HOST || 'localhost',
+  database: process.env.DB_NAME || 'devcollab',
+  password: process.env.DB_PASSWORD || '',
+  port: parseInt(process.env.DB_PORT || '5432'),
 });
 
 export default pool;
