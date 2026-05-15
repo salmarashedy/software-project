@@ -17,16 +17,16 @@ interface Task {
 interface TaskCardProps {
   task: Task;
   onDelete?: (id: string) => void;
+  onEdit?: (task: Task) => void;
 }
 
-const TaskCard = ({ task, onDelete }: TaskCardProps) => {
-  
+const TaskCard = ({ task, onDelete, onEdit }: TaskCardProps) => {
   
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'High': return 'bg-[#F59E0B] text-white'; // Accent Orange
-      case 'Medium': return 'bg-[#6C3BFF] text-white'; // Deep Purple
-      case 'Low': return 'bg-[#34D399] text-white'; // Accent Green
+      case 'High': return 'bg-[#F59E0B] text-white';
+      case 'Medium': return 'bg-[#6C3BFF] text-white';
+      case 'Low': return 'bg-[#34D399] text-white';
       default: return 'bg-gray-500 text-white';
     }
   };
@@ -34,16 +34,19 @@ const TaskCard = ({ task, onDelete }: TaskCardProps) => {
   
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Done': return 'text-[#34D399]'; // Green
-      case 'In Progress': return 'text-[#F59E0B]'; // Orange
-      case 'To Do': return 'text-[#9CA3AF]'; // Muted
+      case 'Done': return 'text-[#34D399]';
+      case 'In Progress': return 'text-[#F59E0B]';
+      case 'To Do': return 'text-[#9CA3AF]';
       default: return 'text-gray-500';
     }
   };
 
   return (
    
-    <div className="bg-[#22223B] border border-[#2E2E4D] rounded-lg p-4 hover:shadow-lg hover:border-[#6C3BFF] transition-all cursor-pointer group">
+    <div
+      className="bg-[#22223B] border border-[#2E2E4D] rounded-lg p-4 hover:shadow-lg hover:border-[#6C3BFF] transition-all cursor-pointer group"
+      onClick={() => onEdit?.(task)}
+    >
       
       {/* Header: Priority & Tags */}
       <div className="flex justify-between items-start mb-3">
