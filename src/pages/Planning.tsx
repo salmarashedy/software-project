@@ -10,38 +10,47 @@ type Task = {
 }
 
 type ApiTask = {
-  id?: number
-  _id?: string
+  id: number
   title?: string
   description?: string
-  status?: 'todo' | 'in-progress' | 'completed' | string
-  priority?: 'low' | 'medium' | 'high' | string
-  dueDate?: string
-  assignedTo?: string
+  status?: 'To Do' | 'In Progress' | 'Done' | string
+  priority?: 'Low' | 'Medium' | 'High' | string
+  assignee_name?: string
+  assignee_avatar?: string
+  due_date?: string | null
   tags?: string[]
-  createdAt?: string
-  updatedAt?: string
+  created_at?: string
+  updated_at?: string
 }
 
-const MOCK_TASKS: Task[] = [
-  { id: 1, name: "Foundation & Routing", start_date: '2026-04-02', end_date: '2026-04-06', color: "bg-[#6C3BFF]" }, // Deep Purple
-  { id: 2, name: "Mock Data Setup", start_date: '2026-04-04', end_date: '2026-04-07', color: "bg-[#22D3EE]" },    // Accent Blue
-  { id: 3, name: "Dashboard Charts", start_date: '2026-04-08', end_date: '2026-04-15', color: "bg-[#F472B6]" },   // Accent Pink
-  { id: 4, name: "Gantt Scalability", start_date: '2026-04-12', end_date: '2026-04-18', color: "bg-[#34D399]" },  // Accent Green
-  { id: 5, name: "Date Math Logic", start_date: '2026-04-16', end_date: '2026-04-22', color: "bg-[#F59E0B]" },    // Accent Orange
-  { id: 6, name: "Final Polish", start_date: '2026-04-20', end_date: '2026-08-25', color: "bg-[#8B5CF6]" },       // Vivid Purple
-  { id: 7, name: "API Integration", start_date: '2026-05-01', end_date: '2026-05-20', color: "bg-[#6C3BFF]" },
-  { id: 8, name: "Auth System", start_date: '2026-05-10', end_date: '2026-06-05', color: "bg-[#22D3EE]" },
-  { id: 9, name: "Testing Suite", start_date: '2026-06-01', end_date: '2026-06-15', color: "bg-[#F472B6]" },
-  { id: 10, name: "Documentation", start_date: '2026-06-10', end_date: '2026-07-01', color: "bg-[#34D399]" },
-  { id: 11, name: "Performance Tuning", start_date: '2026-07-01', end_date: '2026-07-20', color: "bg-[#F59E0B]" },
-  { id: 12, name: "Deployment Pipeline", start_date: '2026-07-15', end_date: '2026-08-10', color: "bg-[#8B5CF6]" },
-]
+type AnalyticsItem = {
+  label: string
+  value: number
+}
+
+type AnalyticsOverview = {
+  summary: {
+    totalTasks: number
+    completedTasks: number
+    pendingTasks: number
+    totalSubtasks: number
+    completedSubtasks: number
+    taskCompletionRate: number
+    subtaskCompletionRate: number
+    productivityRate: number
+  }
+  tasksPerUser: AnalyticsItem[]
+  tasksPerStatus: AnalyticsItem[]
+  completedVsPending: AnalyticsItem[]
+}
 
 const STATUS_COLORS: Record<string, string> = {
   todo: 'bg-[#22D3EE]',
   'in-progress': 'bg-[#F59E0B]',
   completed: 'bg-[#34D399]',
+  'to do': 'bg-[#22D3EE]',
+  'in progress': 'bg-[#F59E0B]',
+  done: 'bg-[#34D399]',
 }
 
 const CHART_COLORS = [
@@ -71,14 +80,13 @@ function formatDateToDayMonth(date: Date) {
 }
 
 function parseTaskId(task: ApiTask, index: number) {
-  if (task._id) return task._id
   if (typeof task.id === 'number') return task.id
   return `task-${index + 1}`
 }
 
 function normalizeTaskDates(task: ApiTask) {
-  const start = task.createdAt || task.dueDate || new Date().toISOString()
-  let end = task.dueDate || task.createdAt || addDays(new Date(start), 3).toISOString()
+  const start = task.created_at || task.due_date || new Date().toISOString()
+  let end = task.due_date || task.created_at || addDays(new Date(start), 3).toISOString()
 
   if (new Date(end).getTime() < new Date(start).getTime()) {
     end = addDays(new Date(start), 1).toISOString()
@@ -88,11 +96,9 @@ function normalizeTaskDates(task: ApiTask) {
 }
 
 function mapApiTasksToGantt(apiTasks: ApiTask[]): Task[] {
-  if (apiTasks.length === 0) return MOCK_TASKS
-
   return apiTasks.map((task, index) => {
     const { start, end } = normalizeTaskDates(task)
-    const status = task.status || 'todo'
+    const status = (task.status || 'To Do').toLowerCase()
 
     return {
       id: parseTaskId(task, index),
@@ -107,6 +113,7 @@ function mapApiTasksToGantt(apiTasks: ApiTask[]): Task[] {
 // --- 3. CONSTANTS ---
 const ROW_HEIGHT = 48
 const DAY_WIDTH = 40 // Fixed pixels per day — the key to proper scaling
+const API_BASE = 'http://localhost:5000/api'
 
 // --- 4. MODULAR COMPONENTS ---
 
@@ -196,67 +203,86 @@ function BarList({ items }: { items: { label: string; value: number; color: stri
 
 // --- 5. MAIN CONTAINER ---
 export default function Planning() {
-  const [apiTasks, setApiTasks] = useState<ApiTask[]>([])
-  const [tasks, setTasks] = useState<Task[]>(MOCK_TASKS)
+  const [tasks, setTasks] = useState<Task[]>([])
+  const [analytics, setAnalytics] = useState<AnalyticsOverview | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const headerScrollRef = useRef<HTMLDivElement>(null)
   const bodyScrollRef = useRef<HTMLDivElement>(null)
   const sidebarScrollRef = useRef<HTMLDivElement>(null)
 
-  const loadTasks = useCallback(async () => {
-    try {
-      const res = await fetch('/api/tasks')
-      if (!res.ok) throw new Error('Failed to load tasks')
-      const data = await res.json()
-      const items: ApiTask[] = Array.isArray(data) ? data : (data.data ?? [])
+  const loadPlanningData = useCallback(async () => {
+    setIsLoading(true)
+    setLoadError('')
 
-      setApiTasks(items)
+    try {
+      const [tasksRes, analyticsRes] = await Promise.all([
+        fetch(`${API_BASE}/tasks`),
+        fetch(`${API_BASE}/analytics/overview`),
+      ])
+
+      if (!tasksRes.ok) throw new Error('Failed to load tasks')
+      if (!analyticsRes.ok) throw new Error('Failed to load analytics')
+
+      const tasksJson = await tasksRes.json()
+      const analyticsJson = await analyticsRes.json()
+
+      if (!tasksJson.success) throw new Error(tasksJson.message || 'Failed to load tasks')
+      if (!analyticsJson.success) throw new Error(analyticsJson.message || 'Failed to load analytics')
+
+      const items: ApiTask[] = tasksJson.data ?? []
+
       setTasks(mapApiTasksToGantt(items))
+      setAnalytics(analyticsJson.data)
       setLastUpdated(new Date())
-    } catch {
-      setApiTasks([])
-      setTasks(MOCK_TASKS)
+    } catch (error) {
+      setTasks([])
+      setAnalytics(null)
+      setLoadError(error instanceof Error ? error.message : 'Failed to load planning data')
+    } finally {
+      setIsLoading(false)
     }
   }, [])
 
   useEffect(() => {
-    loadTasks()
-    const interval = setInterval(loadTasks, 15000)
+    loadPlanningData()
+    const interval = setInterval(loadPlanningData, 15000)
     return () => clearInterval(interval)
-  }, [loadTasks])
+  }, [loadPlanningData])
 
-  const tasksPerUser = useMemo(() => {
-    const counts = new Map<string, number>()
-    apiTasks.forEach(task => {
-      const user = task.assignedTo?.trim() || 'Unassigned'
-      counts.set(user, (counts.get(user) || 0) + 1)
-    })
-
-    return [...counts.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .map(([label, value], index) => ({
-        label,
-        value,
-        color: CHART_COLORS[index % CHART_COLORS.length],
-      }))
-  }, [apiTasks])
-
-  const tasksPerStatus = useMemo(() => {
-    const statuses = ['todo', 'in-progress', 'completed']
-    return statuses.map(status => ({
-      label: status.replace('-', ' '),
-      value: apiTasks.filter(task => (task.status || 'todo') === status).length,
-      color: STATUS_COLORS[status] || CHART_COLORS[0],
+  const colorizeItems = (items: AnalyticsItem[], colorForLabel?: (label: string, index: number) => string) =>
+    items.map((item, index) => ({
+      ...item,
+      color: colorForLabel?.(item.label, index) || CHART_COLORS[index % CHART_COLORS.length],
     }))
-  }, [apiTasks])
 
-  const completedCount = useMemo(
-    () => apiTasks.filter(task => task.status === 'completed').length,
-    [apiTasks]
+  const tasksPerUser = useMemo(
+    () => colorizeItems(analytics?.tasksPerUser ?? []),
+    [analytics]
   )
-  const totalCount = apiTasks.length
-  const pendingCount = Math.max(totalCount - completedCount, 0)
-  const completionRate = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
+
+  const tasksPerStatus = useMemo(
+    () =>
+      colorizeItems(
+        analytics?.tasksPerStatus ?? [],
+        (label, index) => STATUS_COLORS[label.toLowerCase()] || CHART_COLORS[index % CHART_COLORS.length]
+      ),
+    [analytics]
+  )
+
+  const completedVsPending = useMemo(
+    () =>
+      colorizeItems(analytics?.completedVsPending ?? [], (label) =>
+        label.toLowerCase() === 'completed' ? STATUS_COLORS.done : STATUS_COLORS['in progress']
+      ),
+    [analytics]
+  )
+
+  const summary = analytics?.summary
+  const completedCount = summary?.completedTasks ?? 0
+  const totalCount = summary?.totalTasks ?? 0
+  const completionRate = summary?.productivityRate ?? 0
 
   const timelineData = useMemo(() => {
     if (tasks.length === 0) return { start: new Date(), end: new Date(), days: [] as Date[], totalDays: 0 }
@@ -299,14 +325,17 @@ export default function Planning() {
           <button
             type="button"
             className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-dev-border text-dev-text-main hover:bg-dev-bg/60 transition"
-            onClick={loadTasks}
+            onClick={loadPlanningData}
           >
-            Refresh data
+            {isLoading ? 'Refreshing...' : 'Refresh data'}
           </button>
           {lastUpdated ? (
             <span className="text-xs text-dev-text-muted">
               Updated {lastUpdated.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
             </span>
+          ) : null}
+          {loadError ? (
+            <span className="text-xs text-red-400">{loadError}</span>
           ) : null}
         </div>
       </div>
@@ -325,19 +354,17 @@ export default function Planning() {
         </ChartCard>
 
         <ChartCard title="Completed vs pending" subtitle="Progress split">
-          <BarList
-            items={[
-              { label: 'Completed', value: completedCount, color: STATUS_COLORS.completed },
-              { label: 'Pending', value: pendingCount, color: STATUS_COLORS['in-progress'] },
-            ]}
-          />
+          <BarList items={completedVsPending} />
         </ChartCard>
 
-        <ChartCard title="Productivity" subtitle="Completion rate">
+        <ChartCard title="Productivity" subtitle="Tasks + subtasks completion">
           <div className="flex items-end justify-between">
             <div>
               <p className="text-3xl font-bold text-dev-text-main">{completionRate}%</p>
-              <p className="text-xs text-dev-text-muted mt-1">{completedCount} of {totalCount} tasks done</p>
+              <p className="text-xs text-dev-text-muted mt-1">
+                {completedCount} of {totalCount} tasks done
+                {summary ? ` · ${summary.completedSubtasks} of ${summary.totalSubtasks} subtasks done` : ''}
+              </p>
             </div>
           </div>
           <div className="h-2 w-full rounded-full bg-dev-border/30 overflow-hidden mt-3">

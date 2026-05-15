@@ -9,6 +9,7 @@ import { setIo } from './config/socket';
 import taskRoutes from './routes/taskRoutes';
 import subtaskRoutes from './routes/subtaskRoutes';
 import commentRoutes from './routes/commentRoutes';
+import analyticsRoutes from './routes/analyticsRoutes';
 
 dotenv.config();
 
@@ -31,6 +32,7 @@ app.use(express.json());
 app.use('/api/tasks', taskRoutes);
 app.use('/api/subtasks', subtaskRoutes);
 app.use('/api/comments', commentRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 app.get('/api/health', async (_req, res) => {
   try {
