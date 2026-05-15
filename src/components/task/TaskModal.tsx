@@ -4,6 +4,8 @@ import type React from 'react';
 import useAppStore from '../../stores/useAppStore';
 import type { AppTask } from '../../stores/useAppStore';
 
+const API_BASE = 'http://localhost:5000/api';
+
 type Props = {
   isOpen: boolean;
   onClose: () => void;
@@ -26,6 +28,8 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: Props) {
 
   const editTask = useAppStore((s) => s.editTask);
   const createTask = useAppStore((s) => s.createTask);
+  const taskId = task ? Number(task.id) : null;
+  const hasSavedTask = taskId !== null && Number.isFinite(taskId);
 
   useEffect(() => {
     if (isOpen) {
@@ -36,15 +40,24 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: Props) {
         setTitle('');
         setDescription('');
       }
-      fetchSubtasks();
-      fetchComments();
+      setSubtasks([]);
+      setComments([]);
+      setSubtaskText('');
+      setCommentText('');
+
+      if (hasSavedTask) {
+        fetchSubtasks();
+        fetchComments();
+      }
     }
-  }, [isOpen, task]);
+  }, [isOpen, task, hasSavedTask]);
 
   const fetchSubtasks = async () => {
+    if (!hasSavedTask) return;
+
     setIsLoadingSubtasks(true);
     try {
-      const response = await fetch('http://127.0.0.1:5000/api/subtasks/task/1');
+      const response = await fetch(`${API_BASE}/subtasks/task/${taskId}`);
       const data = await response.json();
       console.log('Fetched Subtasks:', data);
 
@@ -59,8 +72,10 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: Props) {
   };
 
   const fetchComments = async () => {
+    if (!hasSavedTask) return;
+
     try {
-      const response = await fetch('http://127.0.0.1:5000/api/comments/task/1');
+      const response = await fetch(`${API_BASE}/comments/task/${taskId}`);
       const data = await response.json();
       console.log('Fetched Comments:', data);
 
@@ -74,13 +89,13 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: Props) {
 
   const handleSubmitSubtask = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!subtaskText.trim()) return;
+    if (!hasSavedTask || !subtaskText.trim()) return;
     setIsSubmittingSubtask(true);
     try {
-      const response = await fetch('http://127.0.0.1:5000/api/subtasks', {
+      const response = await fetch(`${API_BASE}/subtasks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ taskId: 1, title: subtaskText }),
+        body: JSON.stringify({ taskId, title: subtaskText }),
       });
       const data = await response.json();
       if (data.success) {
@@ -96,7 +111,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: Props) {
 
   const handleToggleSubtaskStatus = async (subtaskId: number, currentStatus: boolean) => {
     try {
-      const response = await fetch(`http://127.0.0.1:5000/api/subtasks/${subtaskId}`, {
+      const response = await fetch(`${API_BASE}/subtasks/${subtaskId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ completed: !currentStatus }),
@@ -110,7 +125,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: Props) {
 
   const handleDeleteComment = async (commentId: number) => {
     try {
-      const response = await fetch(`http://127.0.0.1:5000/api/comments/${commentId}`, {
+      const response = await fetch(`${API_BASE}/comments/${commentId}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
       });
@@ -123,7 +138,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: Props) {
 
   const handleDeleteSubtask = async (subtaskId: number) => {
     try {
-      const response = await fetch(`http://127.0.0.1:5000/api/subtasks/${subtaskId}`, {
+      const response = await fetch(`${API_BASE}/subtasks/${subtaskId}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
       });
@@ -136,13 +151,13 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: Props) {
 
   const handleSubmitComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!commentText.trim()) return;
+    if (!hasSavedTask || !commentText.trim()) return;
     setIsSubmitting(true);
     try {
-      const response = await fetch('http://127.0.0.1:5000/api/comments', {
+      const response = await fetch(`${API_BASE}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ taskId: 1, author: 'Shadw', text: commentText }),
+        body: JSON.stringify({ taskId, author: 'Shadw', text: commentText }),
       });
       const data = await response.json();
       if (data.success) {
@@ -213,7 +228,9 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: Props) {
         <div className="mb-5">
           <h3 className="font-semibold mb-3 text-gray-100">Subtasks</h3>
           <ul className="space-y-2 text-sm text-gray-200 mb-3">
-            {isLoadingSubtasks ? (
+            {!hasSavedTask ? (
+              <li className="text-gray-400 italic">Save the task before adding subtasks.</li>
+            ) : isLoadingSubtasks ? (
               <li className="text-gray-400 italic">Loading subtasks...</li>
             ) : subtasks.length > 0 ? (
               subtasks.map((subtask) => (
@@ -254,7 +271,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: Props) {
             />
             <button
               type="submit"
-              disabled={isSubmittingSubtask || !subtaskText.trim()}
+              disabled={isSubmittingSubtask || !hasSavedTask || !subtaskText.trim()}
               className="w-full px-4 py-2 bg-violet-600 text-white rounded-2xl font-medium hover:bg-violet-500 transition disabled:bg-gray-600 disabled:cursor-not-allowed text-sm"
             >
               {isSubmittingSubtask ? 'Adding...' : 'Add Subtask'}
@@ -266,7 +283,10 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: Props) {
         <div className="mb-6">
           <h3 className="font-semibold mb-3 text-gray-100">Comments</h3>
           <div className="space-y-3 mb-4">
-            {comments.map((comment) => (
+            {!hasSavedTask ? (
+              <p className="text-sm text-gray-400 italic">Save the task before adding comments.</p>
+            ) : comments.length > 0 ? (
+              comments.map((comment) => (
               <div
                 key={comment.id}
                 className="bg-[#2a2a40] border border-gray-700 p-3 rounded-2xl group"
@@ -285,7 +305,10 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: Props) {
                   </button>
                 </div>
               </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-sm text-gray-400 italic">No comments yet</p>
+            )}
           </div>
 
           <form onSubmit={handleSubmitComment} className="mt-4">
@@ -298,7 +321,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: Props) {
               />
               <button
                 type="submit"
-                disabled={isSubmitting || !commentText.trim()}
+                disabled={isSubmitting || !hasSavedTask || !commentText.trim()}
                 className="w-full px-4 py-2 bg-violet-600 text-white rounded-2xl font-medium hover:bg-violet-500 transition disabled:bg-gray-600 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? 'Posting...' : 'Post Comment'}

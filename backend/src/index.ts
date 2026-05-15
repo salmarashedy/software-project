@@ -7,6 +7,8 @@ import pool from './config/database';
 import createTables from './config/initDb';
 import { setIo } from './config/socket';
 import taskRoutes from './routes/taskRoutes';
+import subtaskRoutes from './routes/subtaskRoutes';
+import commentRoutes from './routes/commentRoutes';
 
 dotenv.config();
 
@@ -27,6 +29,8 @@ app.use(cors());
 app.use(express.json());
 
 app.use('/api/tasks', taskRoutes);
+app.use('/api/subtasks', subtaskRoutes);
+app.use('/api/comments', commentRoutes);
 
 app.get('/api/health', async (_req, res) => {
   try {

@@ -18,6 +18,34 @@ const createTables = async () => {
         updated_at TIMESTAMP DEFAULT NOW()
       );
     `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS subtasks (
+        id SERIAL PRIMARY KEY,
+        task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+        title VARCHAR(255) NOT NULL,
+        completed BOOLEAN DEFAULT FALSE NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_subtasks_task_id ON subtasks(task_id);
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS comments (
+        id SERIAL PRIMARY KEY,
+        task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+        author VARCHAR(100) NOT NULL,
+        text TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_comments_task_id ON comments(task_id);
+    `);
     console.log('✅ Database tables initialized');
   } catch (error) {
     console.error('❌ Error initializing database tables:', error);
