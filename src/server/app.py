@@ -23,7 +23,8 @@ from flask_cors import CORS
 from config import db, init_db
 
 # Import blueprints (routes)
-from routes import subtask_bp, comment_bp, health_bp
+from routes import subtask_bp, comment_bp, health_bp, auth_bp
+from routes.auth_routes import auth_bp
 
 
 def create_app():
@@ -62,7 +63,17 @@ def create_app():
     app.register_blueprint(health_bp)
     app.register_blueprint(subtask_bp)
     app.register_blueprint(comment_bp)
+    app.register_blueprint(auth_bp, url_prefix='/api/auth') 
     
+
+
+
+    print("\n--- REGISTERED ROUTES ---")
+    for rule in app.url_map.iter_rules():
+        print(f"{rule.endpoint}: {rule}")
+    print("-------------------------\n")
+
+
     # Error handler for 404 (Not Found)
     @app.errorhandler(404)
     def not_found_error(error):
