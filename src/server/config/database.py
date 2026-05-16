@@ -18,13 +18,27 @@ def init_db(app):
         app: Flask application instance
     """
     # Configure SQLAlchemy
-    db_url = os.getenv('DATABASE_URL', 'sqlite:///task_management.db')
+    db_url = os.getenv('DATABASE_URL', '')
+    # Log what we received (mask password for safety)
+    if db_url:
+        parts = db_url.split('@')
+        masked = parts[-1] if len(parts) > 1 else db_url[:30]
+        print(f'[DB INIT] DATABASE_URL received, host portion: {masked}')
+    else:
+        print('[DB INIT] DATABASE_URL is empty, falling back to SQLite')
+
     # Fix postgres:// scheme (SQLAlchemy requires postgresql://)
     if db_url.startswith('postgres://'):
         db_url = db_url.replace('postgres://', 'postgresql://', 1)
+    
+    # Fall back to SQLite only if URL is missing or clearly invalid
+    if not db_url or not db_url.startswith(('postgresql://', 'sqlite://')):
+        print('[DB INIT] WARNING: Falling back to SQLite (DATABASE_URL unresolvable)')
+        db_url = 'sqlite:///task_management.db'
+
     app.config['SQLALCHEMY_DATABASE_URI'] = db_url
     # Enable SSL for production PostgreSQL connections
-    if 'postgresql' in db_url:
+    if db_url.startswith('postgresql://'):
         app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
             'connect_args': {'sslmode': 'require'}
         }
