@@ -19,6 +19,8 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
 
+load_dotenv()
+
 from config import init_db
 from config.socket import init_socketio, socketio
 from routes import analytics_bp, auth_bp, comment_bp, health_bp, project_bp, subtask_bp, task_bp

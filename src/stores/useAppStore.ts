@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import * as api from '../services/api'
 import { connectSocket } from '../services/socket'
+import { buildTaskNotifications } from '../utils/taskNotifications'
 
 type ThemeMode = 'light' | 'dark'
 type DashboardView = 'cards' | 'list' | 'kanban'
@@ -24,6 +25,20 @@ interface TaskSummary {
   total: number
   completed: number
   pending: number
+}
+
+interface AppNotification {
+  key: string
+  taskId: string
+  type: 'overdue' | 'due-today' | 'due-soon' | 'due-this-week' | 'high-priority'
+  severity: 'critical' | 'warning' | 'info'
+  title: string
+  message: string
+  dueDate: string
+  dueDateLabel: string
+  projectName: string | null
+  priority: string
+  daysRemaining: number
 }
 
 const normalizeQuery = (value: string) => value.trim().toLowerCase()
@@ -116,6 +131,8 @@ interface AppState {
   projects: ProjectSummary[]
   taskSummary: TaskSummary
   tasks: AppTask[]
+  notifications: AppNotification[]
+  dismissedNotificationKeys: string[]
   searchTerm: string
   activeProjectId: string
   dashboardView: DashboardView
@@ -132,6 +149,9 @@ interface AppState {
   createProject: (data: { name: string; description?: string; color?: string }) => Promise<void>
   setUser: (user: Partial<UserProfile>) => void
   clearUser: () => void
+  refreshNotifications: () => void
+  dismissNotification: (key: string) => void
+  dismissAllNotifications: () => void
   setSearchTerm: (term: string) => void
   clearSearchTerm: () => void
   setDashboardView: (view: DashboardView) => void
@@ -162,6 +182,14 @@ const useAppStore = create<AppState>()(
         });
       });
 
+      socket.on('task:created', (created: api.Task) => {
+        const appTask = taskToAppTask(created)
+        set((state) => {
+          const tasks = [appTask, ...state.tasks]
+          return { tasks, taskSummary: computeSummary(tasks) }
+        })
+      })
+
       return {
         theme: 'dark',
         toggleTheme: () =>
@@ -176,16 +204,58 @@ const useAppStore = create<AppState>()(
         projects: [],
         taskSummary: { total: 0, completed: 0, pending: 0 },
         tasks: [],
+        notifications: [],
+        dismissedNotificationKeys: [],
         searchTerm: '',
         activeProjectId: 'all',
         dashboardView: 'cards',
         hideCompletedInDashboard: false,
         loading: false,
 
+        refreshNotifications: () =>
+          set((state) => ({
+            notifications: buildTaskNotifications(
+              state.tasks,
+              state.dismissedNotificationKeys,
+              new Date(),
+            ),
+          })),
+
+        dismissNotification: (key) =>
+          set((state) => {
+            const dismissedNotificationKeys = state.dismissedNotificationKeys.includes(key)
+              ? state.dismissedNotificationKeys
+              : [...state.dismissedNotificationKeys, key]
+
+            return {
+              dismissedNotificationKeys,
+              notifications: buildTaskNotifications(state.tasks, dismissedNotificationKeys, new Date()),
+            }
+          }),
+
+        dismissAllNotifications: () =>
+          set((state) => {
+            const dismissedNotificationKeys = [
+              ...new Set([
+                ...state.dismissedNotificationKeys,
+                ...buildTaskNotifications(state.tasks, state.dismissedNotificationKeys, new Date()).map((notification) => notification.key),
+              ]),
+            ]
+
+            return {
+              dismissedNotificationKeys,
+              notifications: [],
+            }
+          }),
+
         addTask: (task) =>
           set((state) => {
             const tasks = [task, ...state.tasks];
-            return { tasks, taskSummary: computeSummary(tasks) };
+            return {
+              tasks,
+              taskSummary: computeSummary(tasks),
+              notifications: buildTaskNotifications(tasks, state.dismissedNotificationKeys, new Date()),
+            };
           }),
 
         updateTask: (id, data) =>
@@ -193,13 +263,21 @@ const useAppStore = create<AppState>()(
             const tasks = state.tasks.map((t) =>
               t.id === id ? { ...t, ...data } : t
             );
-            return { tasks, taskSummary: computeSummary(tasks) };
+            return {
+              tasks,
+              taskSummary: computeSummary(tasks),
+              notifications: buildTaskNotifications(tasks, state.dismissedNotificationKeys, new Date()),
+            };
           }),
 
         removeTask: (id) =>
           set((state) => {
             const tasks = state.tasks.filter((t) => t.id !== id);
-            return { tasks, taskSummary: computeSummary(tasks) };
+            return {
+              tasks,
+              taskSummary: computeSummary(tasks),
+              notifications: buildTaskNotifications(tasks, state.dismissedNotificationKeys, new Date()),
+            };
           }),
 
         fetchTasks: async () => {
@@ -207,7 +285,12 @@ const useAppStore = create<AppState>()(
           try {
             const data = await api.fetchTasks();
             const tasks = data.map(taskToAppTask);
-            set({ tasks, taskSummary: computeSummary(tasks), loading: false });
+            set((state) => ({
+              tasks,
+              taskSummary: computeSummary(tasks),
+              notifications: buildTaskNotifications(tasks, state.dismissedNotificationKeys, new Date()),
+              loading: false,
+            }));
           } catch {
             set({ loading: false });
           }
@@ -266,7 +349,7 @@ const useAppStore = create<AppState>()(
           }));
         },
         setUser: (user) => set((state) => ({ user: { ...state.user, ...user } })),
-        clearUser: () => set({ user: { name: '', email: '', avatarInitial: '' } }),
+        clearUser: () => set({ user: { name: '', email: '', avatarInitial: '' }, dismissedNotificationKeys: [], notifications: [] }),
         setSearchTerm: (term) => set({ searchTerm: term }),
         clearSearchTerm: () => set({ searchTerm: '' }),
         setDashboardView: (view) => set({ dashboardView: view }),
@@ -281,6 +364,7 @@ const useAppStore = create<AppState>()(
         theme: state.theme,
         dashboardView: state.dashboardView,
         hideCompletedInDashboard: state.hideCompletedInDashboard,
+        dismissedNotificationKeys: state.dismissedNotificationKeys,
       }),
     },
   ),
