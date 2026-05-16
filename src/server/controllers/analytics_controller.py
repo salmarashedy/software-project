@@ -1,6 +1,8 @@
 from sqlalchemy import func
 
 from config.database import db
+from models.project import Project
+from models.project_member import ProjectMember
 from models.subtask import Subtask
 from models.task import Task
 
@@ -13,18 +15,57 @@ def _to_number(value):
 
 class AnalyticsController:
     @staticmethod
-    def get_overview():
+    def get_overview(current_user):
         try:
-            total_tasks = db.session.query(func.count(Task.id)).scalar() or 0
+            owned_projects = Project.query.with_entities(Project.id).filter(Project.owner_id == current_user.id)
+            member_projects = (
+                db.session.query(ProjectMember.project_id)
+                .filter(ProjectMember.user_id == current_user.id)
+            )
+            accessible_project_ids = {project_id for (project_id,) in owned_projects.union(member_projects).all()}
+
+            if not accessible_project_ids:
+                return {
+                    'success': True,
+                    'data': {
+                        'summary': {
+                            'totalTasks': 0,
+                            'completedTasks': 0,
+                            'pendingTasks': 0,
+                            'totalSubtasks': 0,
+                            'completedSubtasks': 0,
+                            'taskCompletionRate': 0,
+                            'subtaskCompletionRate': 0,
+                            'productivityRate': 0,
+                        },
+                        'tasksPerUser': [],
+                        'tasksPerStatus': [],
+                        'completedVsPending': [
+                            {'label': 'Completed', 'value': 0},
+                            {'label': 'Pending', 'value': 0},
+                        ],
+                    },
+                }, 200
+
+            scoped_tasks = Task.query.filter(Task.project_id.in_(accessible_project_ids))
+            scoped_task_ids = scoped_tasks.with_entities(Task.id).subquery()
+
+            total_tasks = scoped_tasks.with_entities(func.count(Task.id)).scalar() or 0
             completed_tasks = (
-                db.session.query(func.count(Task.id))
+                scoped_tasks.with_entities(func.count(Task.id))
                 .filter(func.lower(Task.status).in_(['done', 'completed']))
                 .scalar()
                 or 0
             )
-            total_subtasks = db.session.query(func.count(Subtask.id)).scalar() or 0
+            total_subtasks = (
+                db.session.query(func.count(Subtask.id))
+                .filter(Subtask.task_id.in_(scoped_task_ids))
+                .scalar()
+                or 0
+            )
             completed_subtasks = (
                 db.session.query(func.count(Subtask.id))
+                .filter(Subtask.task_id.in_(scoped_task_ids))
                 .filter(Subtask.completed.is_(True))
                 .scalar()
                 or 0
@@ -43,14 +84,14 @@ class AnalyticsController:
             status_label = func.coalesce(func.nullif(func.trim(Task.status), ''), 'To Do')
 
             user_rows = (
-                db.session.query(user_label.label('label'), func.count(Task.id).label('value'))
+                scoped_tasks.with_entities(user_label.label('label'), func.count(Task.id).label('value'))
                 .group_by(user_label)
                 .order_by(func.count(Task.id).desc(), user_label.asc())
                 .all()
             )
 
             status_rows = (
-                db.session.query(status_label.label('label'), func.count(Task.id).label('value'))
+                scoped_tasks.with_entities(status_label.label('label'), func.count(Task.id).label('value'))
                 .group_by(status_label)
                 .order_by(func.count(Task.id).desc(), status_label.asc())
                 .all()

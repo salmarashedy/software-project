@@ -1,64 +1,125 @@
-# API Documentation
+# Task Management System - REST API Documentation
+
+This document describes the complete REST API for the Flask backend, including authentication, projects, tasks, subtasks, comments, analytics, and AI endpoints.
 
 ## Base URL
 ```
 http://localhost:5000/api
 ```
 
-## Task API
+## Authentication
 
-### 1. Get All Tasks
-**Endpoint:** `GET /tasks`
+All endpoints (except `/auth/register`, `/auth/login`, and `/health`) require authentication using a JWT token.
+
+**Headers:**
+```json
+{
+  "Authorization": "Bearer <your_token_here>"
+}
+```
+
+---
+
+## Health API
+
+### 1. Health Check
+**Endpoint:** `GET /health`
 
 **Response:**
 ```json
 {
   "success": true,
-  "count": 5,
-  "data": [
-    {
-      "_id": "507f1f77bcf86cd799439011",
-      "title": "Implement authentication",
-      "description": "Add JWT-based authentication",
-      "status": "in-progress",
-      "priority": "high",
-      "dueDate": "2025-01-15T00:00:00.000Z",
-      "assignedTo": "John Doe",
-      "tags": ["backend", "security"],
-      "subtasks": [],
-      "comments": [],
-      "createdAt": "2025-01-05T10:30:00.000Z",
-      "updatedAt": "2025-01-05T10:30:00.000Z"
-    }
-  ]
+  "status": "healthy",
+  "message": "Task Management API is running"
 }
 ```
 
+---
+
+## Auth API
+
+### 1. Register User
+**Endpoint:** `POST /auth/register`
+
+**Request Body:**
+```json
+{
+  "username": "johndoe",
+  "email": "john@example.com",
+  "password": "securepassword123"
+}
+```
+
+### 2. Login User
+**Endpoint:** `POST /auth/login`
+
+**Request Body:**
+```json
+{
+  "email": "john@example.com",
+  "password": "securepassword123"
+}
+```
+
+### 3. Get Current User Profile
+**Endpoint:** `GET /auth/me`
+
+---
+
+## Projects API
+
+### 1. Get All Accessible Projects
+**Endpoint:** `GET /projects`
+
+### 2. Create Project
+**Endpoint:** `POST /projects`
+
+**Request Body:**
+```json
+{
+  "name": "New Project",
+  "description": "Project description",
+  "color": "#6C3BFF"
+}
+```
+
+### 3. Delete Project
+**Endpoint:** `DELETE /projects/<project_id>`
+
+### 4. Get Project Members
+**Endpoint:** `GET /projects/<project_id>/members`
+
+### 5. Get Project Invites
+**Endpoint:** `GET /projects/<project_id>/invites`
+
+### 6. Invite Member to Project
+**Endpoint:** `POST /projects/<project_id>/invites`
+
+**Request Body:**
+```json
+{
+  "email": "colleague@example.com"
+}
+```
+
+### 7. Get My Incoming Invites
+**Endpoint:** `GET /projects/invites`
+
+### 8. Respond to Invite
+**Endpoint:** `POST /projects/invites/<invite_id>/<action>`
+- `<action>` must be either `accept` or `decline`
+
+---
+
+## Tasks API
+
+### 1. Get All Tasks
+**Endpoint:** `GET /tasks`
+
 ### 2. Get Single Task
-**Endpoint:** `GET /tasks/:id`
+**Endpoint:** `GET /tasks/<task_id>`
 
-**Parameters:**
-- `id` (string, required) - Task ID
-
-**Response:** Single task object
-
-### 3. Get Tasks by Status
-**Endpoint:** `GET /tasks/status/:status`
-
-**Parameters:**
-- `status` (string, required) - One of: `todo`, `in-progress`, `completed`
-
-**Response:** Array of tasks with specified status
-
-### 4. Search Tasks
-**Endpoint:** `GET /tasks/search?query=keyword`
-
-**Query Parameters:**
-- `query` (string, required) - Search keyword
-
-**Response:** Array of matching tasks
-
-### 5. Create Task
+### 3. Create Task
 **Endpoint:** `POST /tasks`
 
 **Request Body:**
@@ -66,277 +127,120 @@ http://localhost:5000/api
 {
   "title": "Implement feature X",
   "description": "Description of the feature",
-  "status": "todo",
-  "priority": "medium",
-  "dueDate": "2025-01-20",
-  "assignedTo": "John Doe",
-  "tags": ["feature", "frontend"]
+  "status": "To Do",
+  "priority": "Medium",
+  "assignee_user_id": 1,
+  "due_date": "2025-01-20",
+  "tags": ["feature", "frontend"],
+  "project_id": 1
 }
 ```
 
-**Required Fields:** `title`
+### 4. Update Task
+**Endpoint:** `PUT /tasks/<task_id>`
 
-**Response:** Created task object
-
-### 6. Update Task
-**Endpoint:** `PUT /tasks/:id`
-
-**Parameters:**
-- `id` (string, required) - Task ID
-
-**Request Body:** Any fields to update
-
-**Response:** Updated task object
-
-### 7. Delete Task
-**Endpoint:** `DELETE /tasks/:id`
-
-**Parameters:**
-- `id` (string, required) - Task ID
-
-**Response:**
+**Request Body:** (Include any fields to update)
 ```json
 {
-  "success": true,
-  "message": "Task deleted successfully"
+  "status": "In Progress"
 }
 ```
+
+### 5. Delete Task
+**Endpoint:** `DELETE /tasks/<task_id>`
 
 ---
 
-## Subtask API
+## Subtasks API
 
 ### 1. Get All Subtasks for a Task
-**Endpoint:** `GET /subtasks/task/:taskId`
+**Endpoint:** `GET /subtasks/task/<task_id>`
 
-**Parameters:**
-- `taskId` (string, required) - Task ID
-
-**Response:** Array of subtasks
-
-### 2. Get Subtask Statistics
-**Endpoint:** `GET /subtasks/stats/:taskId`
-
-**Parameters:**
-- `taskId` (string, required) - Task ID
-
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "total": 5,
-    "completed": 3,
-    "pending": 2,
-    "progress": 60
-  }
-}
-```
-
-### 3. Get Single Subtask
-**Endpoint:** `GET /subtasks/:id`
-
-**Parameters:**
-- `id` (string, required) - Subtask ID
-
-**Response:** Single subtask object
-
-### 4. Create Subtask
+### 2. Create Subtask
 **Endpoint:** `POST /subtasks`
 
 **Request Body:**
 ```json
 {
-  "taskId": "507f1f77bcf86cd799439011",
-  "title": "Implement JWT middleware",
-  "assignedTo": "Jane Smith",
-  "dueDate": "2025-01-10",
-  "priority": "high"
+  "taskId": 1,
+  "title": "Implement JWT middleware"
 }
 ```
 
-**Required Fields:** `taskId`, `title`
+### 3. Update Subtask
+**Endpoint:** `PUT /subtasks/<subtask_id>`
 
-**Response:** Created subtask object
-
-### 5. Update Subtask
-**Endpoint:** `PUT /subtasks/:id`
-
-**Parameters:**
-- `id` (string, required) - Subtask ID
-
-**Request Body:** Any fields to update
-
-**Response:** Updated subtask object
-
-### 6. Toggle Subtask Completion
-**Endpoint:** `PATCH /subtasks/:id/toggle`
-
-**Parameters:**
-- `id` (string, required) - Subtask ID
-
-**Response:** Updated subtask object with toggled `completed` status
-
-### 7. Delete Subtask
-**Endpoint:** `DELETE /subtasks/:id`
-
-**Parameters:**
-- `id` (string, required) - Subtask ID
-
-**Response:**
+**Request Body:**
 ```json
 {
-  "success": true,
-  "message": "Subtask deleted successfully"
+  "title": "New Title",
+  "completed": true
 }
 ```
+
+### 4. Delete Subtask
+**Endpoint:** `DELETE /subtasks/<subtask_id>`
 
 ---
 
-## Comment API
+## Comments API
 
 ### 1. Get All Comments for a Task
-**Endpoint:** `GET /comments/task/:taskId`
+**Endpoint:** `GET /comments/task/<task_id>`
 
-**Parameters:**
-- `taskId` (string, required) - Task ID
-
-**Response:** Array of comments
-
-### 2. Get Single Comment
-**Endpoint:** `GET /comments/:id`
-
-**Parameters:**
-- `id` (string, required) - Comment ID
-
-**Response:** Single comment object with replies
-
-### 3. Create Comment
+### 2. Create Comment
 **Endpoint:** `POST /comments`
 
 **Request Body:**
 ```json
 {
-  "taskId": "507f1f77bcf86cd799439011",
-  "content": "Started working on this task",
+  "taskId": 1,
   "author": "John Doe",
-  "authorId": "user123"
+  "text": "Started working on this task"
 }
 ```
 
-**Required Fields:** `taskId`, `content`, `author`
+### 3. Delete Comment
+**Endpoint:** `DELETE /comments/<comment_id>`
 
-**Response:** Created comment object
+---
 
-### 4. Update Comment
-**Endpoint:** `PUT /comments/:id`
+## Analytics API
 
-**Parameters:**
-- `id` (string, required) - Comment ID
+### 1. Get User Analytics Overview
+**Endpoint:** `GET /analytics/overview`
+
+---
+
+## AI API
+
+### 1. Suggest Subtasks
+**Endpoint:** `POST /ai/suggest-subtasks`
 
 **Request Body:**
 ```json
 {
-  "content": "Updated comment text"
+  "title": "Build Authentication",
+  "description": "Implement user login and registration."
 }
 ```
 
-**Required Fields:** `content`
+---
 
-**Response:** Updated comment object
+## Standard Response Formats
 
-### 5. Delete Comment
-**Endpoint:** `DELETE /comments/:id`
-
-**Parameters:**
-- `id` (string, required) - Comment ID
-
-**Response:**
+### Success Response
 ```json
 {
   "success": true,
-  "message": "Comment deleted successfully"
+  "data": { ... }
 }
 ```
 
-### 6. Add Reply to Comment
-**Endpoint:** `POST /comments/:id/replies`
-
-**Parameters:**
-- `id` (string, required) - Comment ID
-
-**Request Body:**
-```json
-{
-  "content": "I agree with this comment",
-  "author": "Jane Smith",
-  "authorId": "user456"
-}
-```
-
-**Required Fields:** `content`, `author`
-
-**Response:** Updated comment object with new reply
-
-### 7. Delete Reply from Comment
-**Endpoint:** `DELETE /comments/:commentId/replies/:replyId`
-
-**Parameters:**
-- `commentId` (string, required) - Comment ID
-- `replyId` (string, required) - Reply ID
-
-**Response:** Updated comment object with reply removed
-
----
-
-## Error Responses
-
-### 400 Bad Request
+### Error Response
 ```json
 {
   "success": false,
-  "message": "Validation error message"
+  "message": "Error message describing what went wrong"
 }
 ```
-
-### 404 Not Found
-```json
-{
-  "success": false,
-  "message": "Resource not found"
-}
-```
-
-### 500 Internal Server Error
-```json
-{
-  "success": false,
-  "message": "Internal server error"
-}
-```
-
----
-
-## Status Codes
-
-| Code | Description |
-|------|-------------|
-| 200  | OK - Request successful |
-| 201  | Created - Resource created successfully |
-| 400  | Bad Request - Invalid input |
-| 404  | Not Found - Resource not found |
-| 500  | Internal Server Error |
-
----
-
-## Enums
-
-### Task Status
-- `todo` - Task is in the to-do list
-- `in-progress` - Task is currently being worked on
-- `completed` - Task is completed
-
-### Priority Levels
-- `low` - Low priority
-- `medium` - Medium priority
-- `high` - High priority

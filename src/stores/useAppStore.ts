@@ -19,6 +19,8 @@ interface ProjectSummary {
   description: string
   color: string
   taskCount: number
+  memberCount: number
+  isOwner: boolean
 }
 
 interface TaskSummary {
@@ -73,6 +75,7 @@ export interface AppTask {
   status: 'To Do' | 'In Progress' | 'Done'
   priority: 'High' | 'Medium' | 'Low'
   assignee: { name: string; avatar: string }
+  assigneeUserId: string
   dueDate: string
   tags: string[]
 }
@@ -84,6 +87,7 @@ export interface TaskFormData {
   status: AppTask['status']
   priority: AppTask['priority']
   assignee: { name: string; avatar: string }
+  assigneeUserId: string
   dueDate: string
   tags: string[]
 }
@@ -100,6 +104,7 @@ const taskToAppTask = (t: api.Task): AppTask => ({
     name: t.assignee_name || '',
     avatar: t.assignee_avatar || '',
   },
+  assigneeUserId: t.assignee_user_id !== null ? String(t.assignee_user_id) : '',
   dueDate: t.due_date || '',
   tags: t.tags || [],
 });
@@ -112,7 +117,9 @@ const taskFormDataToApiData = (data: Partial<TaskFormData>): Partial<api.TaskDat
     : {}),
   ...(data.status !== undefined ? { status: data.status } : {}),
   ...(data.priority !== undefined ? { priority: data.priority } : {}),
-  ...(data.assignee?.name !== undefined ? { assignee_name: data.assignee.name } : {}),
+  ...(data.assigneeUserId !== undefined
+    ? { assignee_user_id: data.assigneeUserId ? Number(data.assigneeUserId) : null }
+    : {}),
   ...(data.assignee?.avatar !== undefined ? { assignee_avatar: data.assignee.avatar } : {}),
   ...(data.dueDate !== undefined ? { due_date: data.dueDate || undefined } : {}),
   ...(data.tags !== undefined ? { tags: data.tags } : {}),
@@ -147,6 +154,7 @@ interface AppState {
   editTask: (id: string, data: Partial<TaskFormData>) => Promise<void>
   deleteTask: (id: string) => Promise<void>
   createProject: (data: { name: string; description?: string; color?: string }) => Promise<void>
+  deleteProject: (id: string) => Promise<void>
   setUser: (user: Partial<UserProfile>) => void
   clearUser: () => void
   refreshNotifications: () => void
@@ -185,6 +193,7 @@ const useAppStore = create<AppState>()(
       socket.on('task:created', (created: api.Task) => {
         const appTask = taskToAppTask(created)
         set((state) => {
+          if (state.tasks.some(t => t.id === appTask.id)) return state;
           const tasks = [appTask, ...state.tasks]
           return { tasks, taskSummary: computeSummary(tasks) }
         })
@@ -250,6 +259,7 @@ const useAppStore = create<AppState>()(
 
         addTask: (task) =>
           set((state) => {
+            if (state.tasks.some(t => t.id === task.id)) return state;
             const tasks = [task, ...state.tasks];
             return {
               tasks,
@@ -305,6 +315,8 @@ const useAppStore = create<AppState>()(
               description: project.description,
               color: project.color,
               taskCount: project.task_count,
+              memberCount: project.member_count,
+              isOwner: project.is_owner,
             }));
             set((state) => ({
               projects,
@@ -342,11 +354,23 @@ const useAppStore = create<AppState>()(
             description: created.description,
             color: created.color,
             taskCount: created.task_count,
+            memberCount: created.member_count,
+            isOwner: created.is_owner,
           };
           set((state) => ({
             projects: [...state.projects, project],
             activeProjectId: project.id,
           }));
+        },
+        deleteProject: async (id) => {
+          await api.deleteProject(Number(id));
+          set((state) => {
+            const projects = state.projects.filter((p) => p.id !== id);
+            return {
+              projects,
+              activeProjectId: state.activeProjectId === id ? 'all' : state.activeProjectId,
+            };
+          });
         },
         setUser: (user) => set((state) => ({ user: { ...state.user, ...user } })),
         clearUser: () => set({ user: { name: '', email: '', avatarInitial: '' }, dismissedNotificationKeys: [], notifications: [] }),

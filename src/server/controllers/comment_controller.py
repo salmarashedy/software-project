@@ -3,6 +3,7 @@
 # Business logic controller for Comment operations
 
 from config.database import db
+from controllers.project_access import comment_is_accessible, task_is_accessible
 from models.comment import Comment
 
 
@@ -17,7 +18,7 @@ class CommentController:
     """
     
     @staticmethod
-    def create_comment(task_id, author, text):
+    def create_comment(current_user, task_id, author, text):
         """
         Create a new comment for a task.
         
@@ -33,6 +34,12 @@ class CommentController:
             ValueError: If required fields are missing
         """
         try:
+            if not task_is_accessible(current_user, task_id):
+                return {
+                    'success': False,
+                    'error': f'Task {task_id} not found'
+                }, 404
+
             # Validate input
             if not author or not author.strip():
                 return {
@@ -70,7 +77,7 @@ class CommentController:
             }, 500
     
     @staticmethod
-    def get_comments_by_task(task_id):
+    def get_comments_by_task(current_user, task_id):
         """
         Get all comments for a specific task.
         
@@ -81,6 +88,12 @@ class CommentController:
             dict: List of comments for the task
         """
         try:
+            if not task_is_accessible(current_user, task_id):
+                return {
+                    'success': False,
+                    'error': f'Task {task_id} not found'
+                }, 404
+
             comments = Comment.query.filter_by(task_id=task_id).all()
             
             return {
@@ -95,7 +108,7 @@ class CommentController:
             }, 500
     
     @staticmethod
-    def delete_comment(comment_id):
+    def delete_comment(current_user, comment_id):
         """
         Delete a comment.
         
@@ -106,6 +119,12 @@ class CommentController:
             dict: Success message or error response
         """
         try:
+            if not comment_is_accessible(current_user, comment_id):
+                return {
+                    'success': False,
+                    'error': f'Comment {comment_id} not found'
+                }, 404
+
             # Find comment
             comment = Comment.query.get(comment_id)
             if not comment:

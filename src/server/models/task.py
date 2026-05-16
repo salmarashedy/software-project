@@ -12,6 +12,7 @@ class Task(db.Model):
     description = db.Column(db.Text, default='', nullable=False)
     status = db.Column(db.String(20), default='To Do', nullable=False)
     priority = db.Column(db.String(10), default='Medium', nullable=False)
+    assignee_user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True, index=True)
     assignee_name = db.Column(db.String(100), default='', nullable=False)
     assignee_avatar = db.Column(db.String(255), default='', nullable=False)
     due_date = db.Column(db.Date, nullable=True)
@@ -20,6 +21,7 @@ class Task(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
     project = db.relationship('Project', back_populates='tasks')
+    assignee = db.relationship('User')
 
     subtasks = db.relationship('Subtask', back_populates='task', cascade='all, delete-orphan', passive_deletes=True)
     comments = db.relationship('Comment', back_populates='task', cascade='all, delete-orphan', passive_deletes=True)
@@ -33,7 +35,9 @@ class Task(db.Model):
             'description': self.description,
             'status': self.status,
             'priority': self.priority,
+            'assignee_user_id': self.assignee_user_id,
             'assignee_name': self.assignee_name,
+            'assignee_email': self.assignee.email if self.assignee else None,
             'assignee_avatar': self.assignee_avatar,
             'due_date': self.due_date.isoformat() if self.due_date else None,
             'tags': self.tags or [],

@@ -3,6 +3,7 @@ import TaskModal from "./components/task/TaskModal";
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Layout from "./components/Layout"
 import Planning from './pages/Planning'
+import Tasks from './pages/Tasks'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Settings from './pages/Settings'
@@ -219,6 +220,7 @@ function App() {
       <Route element={<ProtectedRoute />}>
         <Route element={<Layout />}>
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/tasks" element={<Tasks />} />
           <Route path="/planning" element={<Planning />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/profile" element={<Profile />} />

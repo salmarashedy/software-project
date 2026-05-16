@@ -1,4 +1,4 @@
-import { LayoutGrid, List, Calendar, Plus, Sun, Moon, Settings } from 'lucide-react'
+import { LayoutGrid, List, Calendar, Sun, Moon, Settings } from 'lucide-react'
 import useAppStore from '../stores/useAppStore'
 import { NavLink } from 'react-router-dom'
 function Sidebar() {
@@ -27,9 +27,20 @@ function Sidebar() {
         >
           <LayoutGrid className="w-6 h-6" />
         </NavLink>
-        <button className="w-12 h-12 bg-dev-card rounded-xl flex items-center justify-center hover:bg-dev-border">
-          <List className="text-dev-text-muted w-6 h-6" />
-        </button>
+        <NavLink
+          to="/tasks"
+          className={({ isActive }) =>
+            `w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${
+              isActive
+                ? 'bg-dev-accent text-white'
+                : 'bg-dev-card text-dev-text-muted hover:bg-dev-border'
+            }`
+          }
+          title="Task queue"
+          aria-label="Task queue"
+        >
+          <List className="w-6 h-6" />
+        </NavLink>
         <NavLink 
           to="/planning"
           className={({ isActive }) =>
@@ -45,9 +56,6 @@ function Sidebar() {
       </div>
       {/* Bottom Icons */}
       <div className="mt-auto flex flex-col gap-4">
-        <button className="w-12 h-12 bg-dev-card rounded-xl flex items-center justify-center hover:bg-dev-border">
-          <Plus className="text-dev-text-muted w-6 h-6" />
-        </button>
         <button
           type="button"
           onClick={toggleTheme}

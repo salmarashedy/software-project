@@ -9,6 +9,8 @@ from dotenv import load_dotenv
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from config import db
+from models.project import Project
+from models.project_member import ProjectMember
 from models.user import User
 
 load_dotenv()
@@ -62,6 +64,13 @@ def register_user():
     new_user = User(username=username, email=email, password_hash=hashed_password)
 
     db.session.add(new_user)
+    db.session.flush()
+
+    unowned_projects = Project.query.filter(Project.owner_id.is_(None)).all()
+    for project in unowned_projects:
+        project.owner_id = new_user.id
+        db.session.add(ProjectMember(project_id=project.id, user_id=new_user.id, role='owner'))
+
     db.session.commit()
 
     return jsonify({'success': True, 'message': 'Account created successfully!'}), 201

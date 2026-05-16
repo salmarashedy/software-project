@@ -3,6 +3,7 @@
 # Business logic controller for Subtask operations
 
 from config.database import db
+from controllers.project_access import subtask_is_accessible, task_is_accessible
 from models.subtask import Subtask
 
 
@@ -18,7 +19,7 @@ class SubtaskController:
     """
     
     @staticmethod
-    def create_subtask(task_id, title):
+    def create_subtask(current_user, task_id, title):
         """
         Create a new subtask for a task.
         
@@ -33,6 +34,12 @@ class SubtaskController:
             ValueError: If required fields are missing
         """
         try:
+            if not task_is_accessible(current_user, task_id):
+                return {
+                    'success': False,
+                    'error': f'Task {task_id} not found'
+                }, 404
+
             # Validate input
             if not title or not title.strip():
                 return {
@@ -60,7 +67,7 @@ class SubtaskController:
             }, 500
     
     @staticmethod
-    def get_subtasks_by_task(task_id):
+    def get_subtasks_by_task(current_user, task_id):
         """
         Get all subtasks for a specific task.
         
@@ -71,6 +78,12 @@ class SubtaskController:
             dict: List of subtasks for the task
         """
         try:
+            if not task_is_accessible(current_user, task_id):
+                return {
+                    'success': False,
+                    'error': f'Task {task_id} not found'
+                }, 404
+
             subtasks = Subtask.query.filter_by(task_id=task_id).all()
             
             return {
@@ -85,7 +98,7 @@ class SubtaskController:
             }, 500
     
     @staticmethod
-    def update_subtask_status(subtask_id, completed):
+    def update_subtask_status(current_user, subtask_id, completed):
         """
         Update the completion status of a subtask.
         
@@ -97,6 +110,12 @@ class SubtaskController:
             dict: The updated subtask data or error response
         """
         try:
+            if not subtask_is_accessible(current_user, subtask_id):
+                return {
+                    'success': False,
+                    'error': f'Subtask {subtask_id} not found'
+                }, 404
+
             # Find subtask
             subtask = Subtask.query.get(subtask_id)
             if not subtask:
@@ -122,7 +141,7 @@ class SubtaskController:
             }, 500
     
     @staticmethod
-    def delete_subtask(subtask_id):
+    def delete_subtask(current_user, subtask_id):
         """
         Delete a subtask.
         
@@ -133,6 +152,12 @@ class SubtaskController:
             dict: Success message or error response
         """
         try:
+            if not subtask_is_accessible(current_user, subtask_id):
+                return {
+                    'success': False,
+                    'error': f'Subtask {subtask_id} not found'
+                }, 404
+
             # Find subtask
             subtask = Subtask.query.get(subtask_id)
             if not subtask:

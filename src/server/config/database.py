@@ -28,7 +28,7 @@ def init_db(app):
     db.init_app(app)
 
     # Import models so SQLAlchemy registers every table before create_all().
-    from models import Comment, Project, Subtask, Task, User  # noqa: F401
+    from models import Comment, Project, ProjectInvite, ProjectMember, Subtask, Task, User  # noqa: F401
     
     # Create all tables
     with app.app_context():
@@ -43,6 +43,7 @@ def init_db(app):
                     """
                     CREATE TABLE IF NOT EXISTS projects (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        owner_id INTEGER,
                         name VARCHAR(120) NOT NULL UNIQUE,
                         description TEXT NOT NULL DEFAULT '',
                         color VARCHAR(32) NOT NULL DEFAULT '#6C3BFF',
@@ -54,9 +55,34 @@ def init_db(app):
             )
             db.session.commit()
 
-        project_columns = {column['name'] for column in inspector.get_columns('tasks')} if 'tasks' in table_names else set()
-        if 'tasks' in table_names and 'project_id' not in project_columns:
+        if 'project_members' not in table_names:
+            db.session.execute(
+                text(
+                    """
+                    CREATE TABLE IF NOT EXISTS project_members (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        project_id INTEGER NOT NULL,
+                        user_id INTEGER NOT NULL,
+                        role VARCHAR(20) NOT NULL DEFAULT 'member',
+                        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        UNIQUE(project_id, user_id)
+                    )
+                    """
+                )
+            )
+            db.session.commit()
+
+        project_columns = {column['name'] for column in inspector.get_columns('projects')} if 'projects' in table_names else set()
+        if 'projects' in table_names and 'owner_id' not in project_columns:
+            db.session.execute(text('ALTER TABLE projects ADD COLUMN owner_id INTEGER'))
+            db.session.commit()
+
+        task_columns = {column['name'] for column in inspector.get_columns('tasks')} if 'tasks' in table_names else set()
+        if 'tasks' in table_names and 'project_id' not in task_columns:
             db.session.execute(text('ALTER TABLE tasks ADD COLUMN project_id INTEGER'))
+            db.session.commit()
+        if 'tasks' in table_names and 'assignee_user_id' not in task_columns:
+            db.session.execute(text('ALTER TABLE tasks ADD COLUMN assignee_user_id INTEGER'))
             db.session.commit()
 
         if not Project.query.first():
@@ -74,4 +100,38 @@ def init_db(app):
                 text('UPDATE tasks SET project_id = :project_id WHERE project_id IS NULL'),
                 {'project_id': default_project.id},
             )
+            db.session.commit()
+
+        if 'project_invites' not in table_names:
+            db.session.execute(
+                text(
+                    """
+                    CREATE TABLE IF NOT EXISTS project_invites (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        project_id INTEGER NOT NULL,
+                        email VARCHAR(120) NOT NULL,
+                        role VARCHAR(20) NOT NULL DEFAULT 'member',
+                        token VARCHAR(64) NOT NULL UNIQUE,
+                        status VARCHAR(20) NOT NULL DEFAULT 'pending',
+                        invited_by_id INTEGER,
+                        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        responded_at DATETIME
+                    )
+                    """
+                )
+            )
+            db.session.commit()
+
+        first_user = User.query.order_by(User.id.asc()).first()
+        if first_user:
+            Project.query.filter(Project.owner_id.is_(None)).update({'owner_id': first_user.id})
+            db.session.commit()
+
+        if first_user and not ProjectMember.query.first():
+            users = User.query.all()
+            projects = Project.query.all()
+            for user in users:
+                for project in projects:
+                    role = 'owner' if project.owner_id == user.id else 'member'
+                    db.session.add(ProjectMember(project_id=project.id, user_id=user.id, role=role))
             db.session.commit()

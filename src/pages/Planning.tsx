@@ -125,6 +125,11 @@ const ROW_HEIGHT = 48
 const DAY_WIDTH = 40 // Fixed pixels per day — the key to proper scaling
 const API_BASE = 'http://localhost:5000/api'
 
+const authHeaders = (): Record<string, string> => {
+  const token = localStorage.getItem('token')
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
+
 // --- 4. MODULAR COMPONENTS ---
 
 function GanttTaskRow({ task }: { task: Task }) {
@@ -230,8 +235,8 @@ export default function Planning() {
 
     try {
       const [tasksRes, analyticsRes] = await Promise.all([
-        fetch(`${API_BASE}/tasks`),
-        fetch(`${API_BASE}/analytics/overview`),
+        fetch(`${API_BASE}/tasks`, { headers: authHeaders() }),
+        fetch(`${API_BASE}/analytics/overview`, { headers: authHeaders() }),
       ])
 
       if (!tasksRes.ok) throw new Error('Failed to load tasks')

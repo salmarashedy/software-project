@@ -2,6 +2,7 @@
 # API routes for Comment endpoints
 
 from flask import Blueprint, request, jsonify
+from controllers.auth_controller import token_required
 from controllers.comment_controller import CommentController
 
 # Create blueprint for comment routes
@@ -9,7 +10,8 @@ comment_bp = Blueprint('comments', __name__, url_prefix='/api/comments')
 
 
 @comment_bp.route('', methods=['POST'])
-def create_comment():
+@token_required
+def create_comment(current_user):
     """
     Create a new comment on a task.
     
@@ -46,7 +48,7 @@ def create_comment():
             }), 400
         
         # Call controller
-        response, status_code = CommentController.create_comment(task_id, author, text)
+        response, status_code = CommentController.create_comment(current_user, task_id, author, text)
         return jsonify(response), status_code
         
     except Exception as e:
@@ -57,7 +59,8 @@ def create_comment():
 
 
 @comment_bp.route('/task/<int:task_id>', methods=['GET'])
-def get_comments_for_task(task_id):
+@token_required
+def get_comments_for_task(current_user, task_id):
     """
     Get all comments for a specific task.
     
@@ -69,7 +72,7 @@ def get_comments_for_task(task_id):
         500: Server error
     """
     try:
-        response, status_code = CommentController.get_comments_by_task(task_id)
+        response, status_code = CommentController.get_comments_by_task(current_user, task_id)
         return jsonify(response), status_code
         
     except Exception as e:
@@ -80,7 +83,8 @@ def get_comments_for_task(task_id):
 
 
 @comment_bp.route('/<int:comment_id>', methods=['DELETE'])
-def delete_comment(comment_id):
+@token_required
+def delete_comment(current_user, comment_id):
     """
     Delete a comment.
     
@@ -93,7 +97,7 @@ def delete_comment(comment_id):
         500: Server error
     """
     try:
-        response, status_code = CommentController.delete_comment(comment_id)
+        response, status_code = CommentController.delete_comment(current_user, comment_id)
         return jsonify(response), status_code
         
     except Exception as e:

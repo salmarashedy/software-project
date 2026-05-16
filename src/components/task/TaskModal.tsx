@@ -1,11 +1,17 @@
 // Backend integration feature
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import type React from 'react';
 import useAppStore from '../../stores/useAppStore';
+import * as api from '../../services/api';
 import type { AppTask } from '../../stores/useAppStore';
 import type { TaskFormData } from '../../stores/useAppStore';
 
 const API_BASE = 'http://localhost:5000/api';
+
+const authHeaders = (): Record<string, string> => {
+  const token = localStorage.getItem('token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
 
 type Props = {
   isOpen: boolean;
@@ -21,6 +27,7 @@ const EMPTY_FORM: TaskFormData = {
   status: 'To Do',
   priority: 'Medium',
   assignee: { name: '', avatar: '' },
+  assigneeUserId: '',
   dueDate: '',
   tags: [],
 };
@@ -31,8 +38,9 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: Props) {
   const [projectId, setProjectId] = useState('')
   const [status, setStatus] = useState<TaskFormData['status']>('To Do');
   const [priority, setPriority] = useState<TaskFormData['priority']>('Medium');
-  const [assigneeName, setAssigneeName] = useState('');
+  const [assigneeUserId, setAssigneeUserId] = useState('');
   const [assigneeAvatar, setAssigneeAvatar] = useState('');
+  const [projectMembers, setProjectMembers] = useState<api.ProjectMember[]>([]);
   const [dueDate, setDueDate] = useState('');
   const [tagsText, setTagsText] = useState('');
   const [saving, setSaving] = useState(false);
@@ -50,8 +58,48 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: Props) {
   const createTask = useAppStore((s) => s.createTask);
   const projects = useAppStore((s) => s.projects)
   const activeProjectId = useAppStore((s) => s.activeProjectId)
+  const user = useAppStore((s) => s.user)
   const taskId = task ? Number(task.id) : null;
   const hasSavedTask = taskId !== null && Number.isFinite(taskId);
+
+  const fetchSubtasks = useCallback(async () => {
+    if (!hasSavedTask) return;
+
+    setIsLoadingSubtasks(true);
+    try {
+      const response = await fetch(`${API_BASE}/subtasks/task/${taskId}`, {
+        headers: authHeaders(),
+      });
+      const data = await response.json();
+      console.log('Fetched Subtasks:', data);
+
+      if (data.success) {
+        setSubtasks(data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching subtasks:', error);
+    } finally {
+      setIsLoadingSubtasks(false);
+    }
+  }, [hasSavedTask, taskId]);
+
+  const fetchComments = useCallback(async () => {
+    if (!hasSavedTask) return;
+
+    try {
+      const response = await fetch(`${API_BASE}/comments/task/${taskId}`, {
+        headers: authHeaders(),
+      });
+      const data = await response.json();
+      console.log('Fetched Comments:', data);
+
+      if (data.success) {
+        setComments(data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching comments:', error);
+    }
+  }, [hasSavedTask, taskId]);
 
   useEffect(() => {
     if (isOpen) {
@@ -61,7 +109,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: Props) {
         setProjectId(task.projectId || (activeProjectId === 'all' ? projects[0]?.id || '' : activeProjectId))
         setStatus(task.status);
         setPriority(task.priority);
-        setAssigneeName(task.assignee.name);
+        setAssigneeUserId(task.assigneeUserId);
         setAssigneeAvatar(task.assignee.avatar);
         setDueDate(task.dueDate ? task.dueDate.slice(0, 10) : '');
         setTagsText(task.tags.join(', '));
@@ -71,7 +119,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: Props) {
         setProjectId(activeProjectId === 'all' ? projects[0]?.id || '' : activeProjectId)
         setStatus(EMPTY_FORM.status);
         setPriority(EMPTY_FORM.priority);
-        setAssigneeName(EMPTY_FORM.assignee.name);
+        setAssigneeUserId(EMPTY_FORM.assigneeUserId);
         setAssigneeAvatar(EMPTY_FORM.assignee.avatar);
         setDueDate(EMPTY_FORM.dueDate);
         setTagsText('');
@@ -86,42 +134,33 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: Props) {
         fetchComments();
       }
     }
-  }, [isOpen, task, hasSavedTask, activeProjectId, projects]);
+  }, [isOpen, task, hasSavedTask, activeProjectId, projects, fetchSubtasks, fetchComments]);
 
-  const fetchSubtasks = async () => {
-    if (!hasSavedTask) return;
-
-    setIsLoadingSubtasks(true);
-    try {
-      const response = await fetch(`${API_BASE}/subtasks/task/${taskId}`);
-      const data = await response.json();
-      console.log('Fetched Subtasks:', data);
-
-      if (data.success) {
-        setSubtasks(data.data);
-      }
-    } catch (error) {
-      console.error('Error fetching subtasks:', error);
-    } finally {
-      setIsLoadingSubtasks(false);
+  useEffect(() => {
+    if (!isOpen || !projectId) {
+      setProjectMembers([]);
+      return;
     }
-  };
 
-  const fetchComments = async () => {
-    if (!hasSavedTask) return;
+    let cancelled = false;
+    api.fetchProjectMembers(Number(projectId))
+      .then((members) => {
+        if (!cancelled) setProjectMembers(members);
+      })
+      .catch(() => {
+        if (!cancelled) setProjectMembers([]);
+      });
 
-    try {
-      const response = await fetch(`${API_BASE}/comments/task/${taskId}`);
-      const data = await response.json();
-      console.log('Fetched Comments:', data);
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, projectId]);
 
-      if (data.success) {
-        setComments(data.data);
-      }
-    } catch (error) {
-      console.error('Error fetching comments:', error);
+  useEffect(() => {
+    if (assigneeUserId && !projectMembers.some((member) => String(member.user_id) === assigneeUserId)) {
+      setAssigneeUserId('');
     }
-  };
+  }, [assigneeUserId, projectMembers]);
 
   const handleSubmitSubtask = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,7 +169,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: Props) {
     try {
       const response = await fetch(`${API_BASE}/subtasks`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ taskId, title: subtaskText }),
       });
       const data = await response.json();
@@ -149,7 +188,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: Props) {
     try {
       const response = await fetch(`${API_BASE}/subtasks/${subtaskId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({ completed: !currentStatus }),
       });
       const data = await response.json();
@@ -163,7 +202,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: Props) {
     try {
       const response = await fetch(`${API_BASE}/comments/${commentId}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
       });
       const data = await response.json();
       if (data.success) fetchComments();
@@ -176,7 +215,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: Props) {
     try {
       const response = await fetch(`${API_BASE}/subtasks/${subtaskId}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders(),
       });
       const data = await response.json();
       if (data.success) fetchSubtasks();
@@ -192,8 +231,8 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: Props) {
     try {
       const response = await fetch(`${API_BASE}/comments`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ taskId, author: 'Shadw', text: commentText }),
+        headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskId, author: user.name || 'Unknown user', text: commentText }),
       });
       const data = await response.json();
       if (data.success) {
@@ -279,9 +318,10 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: Props) {
         status,
         priority,
         assignee: {
-          name: assigneeName.trim(),
+          name: '',
           avatar: assigneeAvatar.trim(),
         },
+        assigneeUserId,
         dueDate,
         tags,
       };
@@ -296,7 +336,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: Props) {
       setDescription('');
       setStatus('To Do');
       setPriority('Medium');
-      setAssigneeName('');
+      setAssigneeUserId('');
       setAssigneeAvatar('');
       setDueDate('');
       setTagsText('');
@@ -395,13 +435,20 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: Props) {
 
         <div className="grid grid-cols-1 gap-4 mb-5 sm:grid-cols-2">
           <div>
-            <label className="block text-sm font-medium mb-2 text-gray-200">Assignee Name</label>
-            <input
-              value={assigneeName}
-              onChange={(e) => setAssigneeName(e.target.value)}
-              className="w-full bg-[#2a2a40] text-white border border-gray-600 placeholder-gray-400 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-violet-500"
-              placeholder="Who owns this task?"
-            />
+            <label className="block text-sm font-medium mb-2 text-gray-200">Assignee</label>
+            <select
+              value={assigneeUserId}
+              onChange={(e) => setAssigneeUserId(e.target.value)}
+              className="w-full bg-[#2a2a40] text-white border border-gray-600 rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-violet-500"
+              disabled={!projectId}
+            >
+              <option value="">Unassigned</option>
+              {projectMembers.map((member) => (
+                <option key={member.user_id} value={member.user_id}>
+                  {member.username || member.email || `User ${member.user_id}`}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="block text-sm font-medium mb-2 text-gray-200">Assignee Avatar URL</label>
