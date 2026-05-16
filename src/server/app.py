@@ -24,7 +24,6 @@ from routes.auth_routes import auth_bp
 def create_app():
     """
     Application factory function.
-    
     Creates and configures the Flask application with:
     - Database setup
     - CORS configuration
@@ -39,8 +38,8 @@ def create_app():
     app.config['JSON_SORT_KEYS'] = False
     
     init_db(app)
-    
-    CORS(app, resources={r"/api/*": {"origins": "*", "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"], "allow_headers": ["Content-Type"]}})
+
+    CORS(app, resources={r"/*": {"origins": "*"}})
     
     from routes import health_bp, subtask_bp, comment_bp 
     app.register_blueprint(health_bp)

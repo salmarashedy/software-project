@@ -28,3 +28,8 @@ __pycache__/
 *.njsproj
 *.sln
 *.sw?
+
+# Database
+*.db
+src/server/instance/
+.env

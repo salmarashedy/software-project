@@ -70,6 +70,8 @@ interface AppState {
   createTask: (data: { title: string; description: string }) => Promise<void>
   editTask: (id: string, data: { title: string; description: string }) => Promise<void>
   deleteTask: (id: string) => Promise<void>
+  setUser: (user: Partial<UserProfile>) => void
+  clearUser: () => void
 }
 
 const useAppStore = create<AppState>()(
@@ -162,6 +164,8 @@ const useAppStore = create<AppState>()(
           await api.deleteTask(Number(id));
           get().removeTask(id);
         },
+        setUser: (user) => set((state) => ({ user: { ...state.user, ...user } })),
+        clearUser: () => set({ user: { name: '', email: '', avatarInitial: '' } }),
       };
     },
     {

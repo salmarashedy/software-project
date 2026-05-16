@@ -161,6 +161,8 @@ const [currentView, setCurrentView] = useState<'cards' | 'list' | 'kanban'>('car
   )
 }
 
+import ProtectedRoute from './components/ProtectedRoute';
+import Profile from './pages/Profile';
 function App() {
   const theme = useAppStore((state) => state.theme)
 
@@ -174,9 +176,12 @@ function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
-      <Route element={<Layout />}>
-      <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/planning" element={<Planning />} />
+      <Route element={<ProtectedRoute />}>
+        <Route element={<Layout />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/planning" element={<Planning />} />
+          <Route path="/profile" element={<Profile />} />
+        </Route>
       </Route>
       <Route path="/" element={<Navigate to="/login" />} />
     </Routes>

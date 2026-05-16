@@ -1,13 +1,31 @@
 import { useNavigate } from 'react-router-dom'
-import type React from 'react'
+import React, { useState } from 'react' // Added useState
+import { authService } from '../services/authService' // Import our service
 
 function Login() {
   const navigate = useNavigate()
+  
+  // State to hold form data
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Fake auth - redirect to dashboard
-    navigate('/dashboard')
+    
+    try {
+      const result = await authService.login(email, password)
+      if (result.success) {
+        // SAVE THE TOKEN! This is the most important part
+        localStorage.setItem('token', result.token);
+        
+        alert(`Welcome back, ${result.username}!`);
+        navigate('/dashboard')
+      } else {
+        alert("Error: " + result.error);
+      }
+    } catch (error) {
+      alert("Server error: Make sure your Python backend is running!");
+    }
   }
 
   return (
@@ -21,16 +39,22 @@ function Login() {
             <label className="block text-dev-text-main mb-2">Email</label>
             <input
               type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="w-full bg-dev-card border border-dev-border rounded-lg px-4 py-3 text-dev-text-main focus:outline-none focus:border-dev-primary"
               placeholder="you@example.com"
+              required
             />
           </div>
           <div>
             <label className="block text-dev-text-main mb-2">Password</label>
             <input
               type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               className="w-full bg-dev-card border border-dev-border rounded-lg px-4 py-3 text-dev-text-main focus:outline-none focus:border-dev-primary"
               placeholder="••••••••"
+              required
             />
           </div>
           <button
