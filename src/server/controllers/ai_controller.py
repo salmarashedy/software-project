@@ -34,4 +34,4 @@ def refine_description():
         return jsonify({"success": True, "refined": refined_text}), 200
     except Exception as e:
         print(f"AI Error: {e}")
-        return jsonify({"success": False, "error": str(e)}), 500
+        return jsonify({"success": False, "error": "Failed to refine description"}), 500
