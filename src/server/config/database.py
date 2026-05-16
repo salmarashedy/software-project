@@ -37,11 +37,6 @@ def init_db(app):
         db_url = 'sqlite:///task_management.db'
 
     app.config['SQLALCHEMY_DATABASE_URI'] = db_url
-    # Enable SSL for production PostgreSQL connections
-    if db_url.startswith('postgresql://'):
-        app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-            'connect_args': {'sslmode': 'require'}
-        }
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
     # Initialize database with app
