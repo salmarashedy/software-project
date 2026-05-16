@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildTaskNotifications, TaskNotificationSource } from '../utils/taskNotifications'
+import { buildTaskNotifications, type TaskNotificationSource } from '../utils/taskNotifications'
 
 describe('buildTaskNotifications', () => {
   const createMockTask = (id: string, daysOffset: number, status = 'To Do', priority = 'Medium'): TaskNotificationSource => {

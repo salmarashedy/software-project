@@ -32,7 +32,7 @@ function Dashboard() {
 
   useEffect(() => {
     fetchTasks();
-  }, []);
+  }, [fetchTasks]);
 
 const [currentView, setCurrentView] = useState<'cards' | 'list' | 'kanban'>(dashboardView)
 

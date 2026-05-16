@@ -18,7 +18,7 @@ function Header() {
   const setSearchTerm = useAppStore((state) => state.setSearchTerm)
   const clearSearchTerm = useAppStore((state) => state.clearSearchTerm)
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
-  const [nowTick, setNowTick] = useState(Date.now())
+  const [nowTick, setNowTick] = useState(() => Date.now())
   const trayRef = useRef<HTMLDivElement | null>(null)
   const announcedNotificationKeys = useRef<Set<string>>(new Set())
 
