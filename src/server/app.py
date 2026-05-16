@@ -41,11 +41,15 @@ def create_app():
 
     CORS(app, resources={r"/*": {"origins": "*"}})
     
+    from routes.auth_routes import auth_bp
+    from routes.ai_routes import ai_bp
+    
     from routes import health_bp, subtask_bp, comment_bp 
     app.register_blueprint(health_bp)
     app.register_blueprint(subtask_bp)
     app.register_blueprint(comment_bp)
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
+    app.register_blueprint(ai_bp, url_prefix='/api/ai')
     
     @app.errorhandler(404)
     def not_found_error(error):

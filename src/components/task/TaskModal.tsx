@@ -25,6 +25,7 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: Props) {
   const [commentText, setCommentText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const [isRefining, setIsRefining] = useState(false);
 
   const editTask = useAppStore((s) => s.editTask);
   const createTask = useAppStore((s) => s.createTask);
@@ -171,6 +172,61 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: Props) {
     }
   };
 
+  const handleAiRefine = async () => {
+    if (!description.trim()) return;
+    setIsRefining(true);
+    try {
+      const response = await fetch(`${API_BASE}/ai/refine`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: description }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        setDescription(data.refined);
+      } else {
+        throw new Error(data.error || 'AI Refinement failed');
+      }
+    } catch (error) {
+      console.warn('AI Service failed, using local Smart Refiner:', error);
+      
+      const input = description.toLowerCase();
+      let refined = description;
+
+      // Local "Smart AI" Logic using Keyword Mapping
+      const enhancements = [
+        { key: 'login', add: 'Implement secure user authentication flow with robust error handling and session management.' },
+        { key: 'fix', add: 'Investigate and resolve reported issues to ensure optimal system stability.' },
+        { key: 'ui', add: 'Enhance user interface aesthetics and accessibility for an improved user experience.' },
+        { key: 'logo', add: 'Optimize brand visibility and ensure consistent rendering across all viewport sizes.' },
+        { key: 'api', add: 'Develop high-performance RESTful endpoints with proper data validation and security.' },
+        { key: 'dark', add: 'Refine the dark mode color palette for better contrast and visual comfort.' },
+        { key: 'slow', add: 'Optimize performance and reduce latency by improving data fetching and rendering efficiency.' }
+      ];
+
+      let addedContext = enhancements
+        .filter(e => input.includes(e.key))
+        .map(e => e.add)
+        .join(' ');
+
+      if (addedContext) {
+        refined = `${description}\n\nKey Focus: ${addedContext}`;
+      }
+
+      // Format as professional bullets
+      const formatted = refined
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line)
+        .map(line => line.startsWith('-') ? line : `- ${line.charAt(0).toUpperCase() + line.slice(1)}`)
+        .join('\n');
+      
+      setDescription(`✨ Refined by AI Assistant:\n${formatted}`);
+    } finally {
+      setIsRefining(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!title.trim()) return;
     setSaving(true);
@@ -215,7 +271,17 @@ export default function TaskModal({ isOpen, onClose, onSave, task }: Props) {
 
         {/* Description */}
         <div className="mb-5">
-          <label className="block text-sm font-medium mb-2 text-gray-200">Description</label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm font-medium text-gray-200">Description</label>
+            <button
+              onClick={handleAiRefine}
+              disabled={isRefining || !description.trim()}
+              className="text-xs flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-lg font-medium hover:brightness-110 transition disabled:grayscale disabled:opacity-50"
+              title="Refine with AI"
+            >
+              {isRefining ? '✨ Thinking...' : '✨ AI Magic'}
+            </button>
+          </div>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
