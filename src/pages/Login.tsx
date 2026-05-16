@@ -23,7 +23,7 @@ function Login() {
       } else {
         alert("Error: " + result.error);
       }
-    } catch (error) {
+    } catch {
       alert("Server error: Make sure your Python backend is running!");
     }
   }

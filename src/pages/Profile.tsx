@@ -22,7 +22,7 @@ export default function Profile() {
         } else {
           setError(data.error || data.message || 'Failed to load profile');
         }
-      } catch (err) {
+      } catch {
         setError('An error occurred while loading the profile');
       } finally {
         setLoading(false);

@@ -28,9 +28,10 @@ function Register() {
       } else {
         alert("Error: " + result.error)
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error(error);
-      alert("Server error: " + (error.message || String(error)));
+      const msg = error instanceof Error ? error.message : String(error);
+      alert("Server error: " + msg);
     }
   }
 
